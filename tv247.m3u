@@ -1,5 +1,6 @@
 #EXTM3U
-# Generated: 2026-05-07 22:10:55 UTC
+# Generated: 2026-05-07 22:23:24 UTC
+# Source: tv247.us
 
-#EXTINF:-1 tvg-id="bein-sports-1-turkey" tvg-name="Bein Sports 1 Turkey" group-title="TV247",Bein Sports 1 Turkey
-https://code.jquery.com/jquery-3.6.0.min.js
+#EXTINF:-1 tvg-id="bein-sports-1-turkey" tvg-name="Bein Sports 1 Turkey" group-title="Sports",Bein Sports 1 Turkey
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2MiIsInRzIjoxNzc4MTkyNjAzNzI2fQ==
