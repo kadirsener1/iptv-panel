@@ -1,20 +1,17 @@
 name: Update M3U Playlist
 
 on:
-  # Her 4 saatte bir çalışsın (tokenlar süreli olduğu için)
   schedule:
     - cron: '0 */4 * * *'
 
-  # Manuel tetikleme
   workflow_dispatch:
     inputs:
       debug:
-        description: 'Debug mode (verbose logging)'
+        description: 'Debug mode'
         required: false
         default: 'false'
         type: boolean
 
-  # Push olduğunda da çalışsın
   push:
     branches:
       - main
@@ -23,7 +20,6 @@ on:
       - 'channels.txt'
       - '.github/workflows/update_m3u.yml'
 
-# Aynı anda birden fazla çalışmasını engelle
 concurrency:
   group: update-m3u
   cancel-in-progress: true
@@ -33,27 +29,25 @@ permissions:
 
 jobs:
   update-playlist:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ← 22.04 kullan, 24.04'te paket adları değişti
     timeout-minutes: 30
 
     steps:
-      # ─── Checkout ───
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      # ─── Python Setup ───
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # ─── Sistem bağımlılıkları ───
+      # ─── Sistem bağımlılıkları (22.04 uyumlu) ───
       - name: 📦 Install system dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y \
             libnss3 \
             libnspr4 \
@@ -74,7 +68,9 @@ jobs:
             libasound2 \
             libx11-xcb1 \
             fonts-liberation \
-            xvfb
+            xvfb \
+            wget \
+            ca-certificates
 
       # ─── Python bağımlılıkları ───
       - name: 📦 Install Python dependencies
@@ -84,99 +80,93 @@ jobs:
           python -m playwright install chromium
           python -m playwright install-deps chromium
 
-      # ─── Scraper'ı çalıştır ───
+      # ─── Scraper çalıştır ───
       - name: 🔍 Run stream finder
         id: scraper
         run: |
           echo "Starting stream finder..."
           python scraper.py 2>&1 | tee scraper_output.log
-          
-          # M3U dosyasını kontrol et
+          EXIT_CODE=${PIPESTATUS[0]}
+
           if [ -f "tv247.m3u" ]; then
-            echo "✅ M3U dosyası oluşturuldu"
+            CHANNEL_COUNT=$(grep -c "^#EXTINF" tv247.m3u || echo "0")
+            echo "✅ M3U dosyası oluşturuldu ($CHANNEL_COUNT kanal)"
             echo "m3u_created=true" >> $GITHUB_OUTPUT
+            echo "channel_count=$CHANNEL_COUNT" >> $GITHUB_OUTPUT
             cat tv247.m3u
           else
             echo "❌ M3U dosyası oluşturulamadı"
             echo "m3u_created=false" >> $GITHUB_OUTPUT
+            echo "channel_count=0" >> $GITHUB_OUTPUT
           fi
         env:
           PYTHONUNBUFFERED: "1"
 
       # ─── M3U doğrulama ───
-      - name: ✅ Validate M3U file
+      - name: ✅ Validate M3U
         if: steps.scraper.outputs.m3u_created == 'true'
         run: |
-          echo "M3U dosyası doğrulanıyor..."
-          
-          # En az 1 kanal olmalı
           CHANNEL_COUNT=$(grep -c "^#EXTINF" tv247.m3u || echo "0")
           URL_COUNT=$(grep -c "^http" tv247.m3u || echo "0")
-          
-          echo "Kanal sayısı: $CHANNEL_COUNT"
-          echo "URL sayısı: $URL_COUNT"
-          
+          echo "Kanal: $CHANNEL_COUNT | URL: $URL_COUNT"
+
           if [ "$CHANNEL_COUNT" -eq "0" ]; then
-            echo "⚠️ Hiç kanal bulunamadı!"
-            # Önceki başarılı dosyayı koru
-            if git show HEAD:tv247.m3u > /dev/null 2>&1; then
-              echo "Önceki M3U dosyası korunuyor"
-              git checkout HEAD -- tv247.m3u
-            fi
+            echo "⚠️ Kanal bulunamadı, önceki dosya korunuyor"
+            git checkout HEAD -- tv247.m3u 2>/dev/null || true
           fi
 
-      # ─── Sonuçları commit ve push et ───
-      - name: 📤 Commit and push changes
-        if: steps.scraper.outputs.m3u_created == 'true'
+      # ─── Commit & Push ───
+      - name: 📤 Commit and push
         run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-          
-          # Değişiklik var mı kontrol et
-          if git diff --quiet tv247.m3u 2>/dev/null; then
-            echo "ℹ️ M3U dosyasında değişiklik yok"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -f tv247.m3u
+
+          if git diff --cached --quiet; then
+            echo "ℹ️ Değişiklik yok, commit atlanıyor"
           else
-            git add tv247.m3u
-            
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             CHANNEL_COUNT=$(grep -c "^#EXTINF" tv247.m3u || echo "0")
-            
-            git commit -m "🔄 Update M3U playlist - ${TIMESTAMP} (${CHANNEL_COUNT} channels)"
+            git commit -m "🔄 Update playlist | ${TIMESTAMP} | ${CHANNEL_COUNT} channels"
             git push
-            
-            echo "✅ Değişiklikler push edildi"
+            echo "✅ Push edildi"
           fi
 
-      # ─── Hata durumunda log ───
+      # ─── Hata logları ───
       - name: 📋 Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: scraper-logs
+          name: scraper-logs-${{ github.run_number }}
           path: |
             scraper_output.log
             tv247.m3u
           retention-days: 7
 
-      # ─── Sonuç özeti ───
+      # ─── Özet ───
       - name: 📊 Summary
         if: always()
         run: |
-          echo "## 📺 TV247 M3U Update Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
+          echo "## 📺 TV247 M3U Update" >> $GITHUB_STEP_SUMMARY
+          echo "| Alan | Değer |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+
           if [ -f "tv247.m3u" ]; then
-            CHANNEL_COUNT=$(grep -c "^#EXTINF" tv247.m3u || echo "0")
-            echo "- ✅ **Status:** Success" >> $GITHUB_STEP_SUMMARY
-            echo "- 📺 **Channels found:** ${CHANNEL_COUNT}" >> $GITHUB_STEP_SUMMARY
+            COUNT=$(grep -c "^#EXTINF" tv247.m3u || echo "0")
+            echo "| Durum | ✅ Başarılı |" >> $GITHUB_STEP_SUMMARY
+            echo "| Kanal Sayısı | ${COUNT} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Durum | ❌ Başarısız |" >> $GITHUB_STEP_SUMMARY
+            echo "| Kanal Sayısı | 0 |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "| Zaman | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "tv247.m3u" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### M3U Content" >> $GITHUB_STEP_SUMMARY
+            echo "### M3U İçeriği" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             cat tv247.m3u >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⏰ **Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
