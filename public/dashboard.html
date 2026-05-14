@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - IPTV Panel</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/dashboard" class="navbar-brand">
+            <span class="icon">📡</span>
+            <span>IPTV Panel</span>
+        </a>
+        <div class="navbar-actions">
+            <span class="navbar-user" id="navUser">👤 Kullanıcı</span>
+            <button class="btn btn-sm btn-red" onclick="logout()">🚪 Çıkış</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Bilgi -->
+        <div class="alert alert-info" id="welcomeAlert">
+            👋 Hoş geldiniz! Aşağıdan istediğiniz kategorileri seçip M3U dosyanızı indirebilir veya canlı link oluşturabilirsiniz.
+        </div>
+
+        <!-- İstatistikler -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">📺</div>
+                <div class="stat-info">
+                    <h3 id="totalChannels">0</h3>
+                    <p>Toplam Kanal</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">📂</div>
+                <div class="stat-info">
+                    <h3 id="totalCategories">0</h3>
+                    <p>Kategori</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">✅</div>
+                <div class="stat-info">
+                    <h3 id="selectedCount">0</h3>
+                    <p>Seçilen Kanal</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kategori Seçimi -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📂 Kategori Seçimi</h2>
+                <div class="card-header-actions">
+                    <button class="btn btn-sm btn-outline" onclick="selectAll()">✅ Tümünü Seç</button>
+                    <button class="btn btn-sm btn-outline" onclick="deselectAll()">❌ Tümünü Kaldır</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="categories-grid" id="categoriesGrid">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- İndirme ve Link -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📥 Playlist Oluştur</h2>
+            </div>
+            <div class="card-body">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary btn-lg btn-block" onclick="downloadM3U()">
+                        📥 M3U Dosyasını İndir
+                    </button>
+                    <button class="btn btn-green btn-lg btn-block" onclick="generateLink()">
+                        🔗 Canlı Link Oluştur
+                    </button>
+                </div>
+
+                <div id="linkArea" style="display:none">
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.95rem;">🔗 IPTV Player Linkiniz</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Bu linki IPTV player uygulamanıza (VLC, TiviMate, IPTV Smarters vb.) ekleyebilirsiniz.
+                    </p>
+                    <div class="link-box">
+                        <input type="text" id="playlistLink" readonly>
+                        <button class="btn btn-sm btn-primary" onclick="copyLink()">📋 Kopyala</button>
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <h3 style="margin-bottom: 0.5rem; font-size: 0.95rem;">🎯 Seçili Kategoriler İçin Link</h3>
+                        <div class="link-box">
+                            <input type="text" id="filteredLink" readonly>
+                            <button class="btn btn-sm btn-green" onclick="copyFilteredLink()">📋 Kopyala</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kanal Önizleme -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📺 Seçili Kanallar Önizleme</h2>
+                <div class="card-header-actions">
+                    <input type="text" class="form-control" id="previewSearch" placeholder="🔍 Kanal ara..." 
+                           style="width:250px" oninput="renderPreview()">
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kanal</th>
+                                <th>Kategori</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTable">
+                            <tr><td colspan="2"><div class="empty-state"><div class="icon">📺</div><h3>Kategori seçin</h3><p>Yukarıdan kategorileri seçerek kanalları görüntüleyin</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <span class="pagination-info" id="previewInfo"></span>
+                    <div class="pagination-buttons" id="previewPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        let userToken = '';
+        let userName = '';
+        let allChannels = [];
+        let categories = {};
+        let selectedCategories = new Set();
+        let previewPage = 1;
+        const previewPerPage = 25;
+
+        // Init
+        (async function init() {
+            const res = await fetch('/api/session');
+            const data = await res.json();
+            
+            if (!data.loggedIn || data.isAdmin) {
+                window.location.href = data.isAdmin ? '/admin' : '/login';
+                return;
+            }
+            
+            userToken = data.token;
+            userName = data.username;
+            document.getElementById('navUser').textContent = `👤 ${userName}`;
+            
+            await loadData();
+        })();
+
+        async function loadData() {
+            const res = await fetch('/api/channels');
+            allChannels = await res.json();
+            
+            // Kategorileri say
+            categories = {};
+            allChannels.forEach(ch => {
+                const cat = ch.category || 'Genel';
+                categories[cat] = (categories[cat] || 0) + 1;
+            });
+            
+            document.getElementById('totalChannels').textContent = allChannels.length;
+            document.getElementById('totalCategories').textContent = Object.keys(categories).length;
+            
+            renderCategories();
+        }
+
+        function renderCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            const sortedCats = Object.keys(categories).sort();
+            
+            grid.innerHTML = sortedCats.map(cat => `
+                <div class="category-item ${selectedCategories.has(cat) ? 'selected' : ''}" onclick="toggleCategory('${escapeAttr(cat)}', this)">
+                    <input type="checkbox" ${selectedCategories.has(cat) ? 'checked' : ''} onclick="event.stopPropagation();" onchange="toggleCategory('${escapeAttr(cat)}', this.parentElement)">
+                    <label>${escapeHtml(cat)}</label>
+                    <span class="count">${categories[cat]}</span>
+                </div>
+            `).join('');
+            
+            updateSelectedCount();
+        }
+
+        function toggleCategory(cat, el) {
+            if (selectedCategories.has(cat)) {
+                selectedCategories.delete(cat);
+                el.classList.remove('selected');
+                el.querySelector('input').checked = false;
+            } else {
+                selectedCategories.add(cat);
+                el.classList.add('selected');
+                el.querySelector('input').checked = true;
+            }
+            updateSelectedCount();
+            renderPreview();
+        }
+
+        function selectAll() {
+            Object.keys(categories).forEach(c => selectedCategories.add(c));
+            renderCategories();
+            renderPreview();
+        }
+
+        function deselectAll() {
+            selectedCategories.clear();
+            renderCategories();
+            renderPreview();
+        }
+
+        function updateSelectedCount() {
+            const selected = getSelectedChannels();
+            document.getElementById('selectedCount').textContent = selected.length;
+        }
+
+        function getSelectedChannels() {
+            if (selectedCategories.size === 0) return [];
+            return allChannels.filter(ch => selectedCategories.has(ch.category || 'Genel'));
+        }
+
+        function renderPreview() {
+            const search = document.getElementById('previewSearch').value.toLowerCase();
+            let channels = getSelectedChannels();
+            
+            if (search) {
+                channels = channels.filter(ch => ch.name.toLowerCase().includes(search));
+            }
+            
+            const tbody = document.getElementById('previewTable');
+            const start = (previewPage - 1) * previewPerPage;
+            const end = start + previewPerPage;
+            const pageChannels = channels.slice(start, end);
+            
+            if (pageChannels.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2"><div class="empty-state"><div class="icon">📺</div><h3>${selectedCategories.size === 0 ? 'Kategori seçin' : 'Kanal bulunamadı'}</h3></div></td></tr>`;
+                document.getElementById('previewInfo').textContent = '';
+                document.getElementById('previewPagination').innerHTML = '';
+                return;
+            }
+            
+            tbody.innerHTML = pageChannels.map(ch => `
+                <tr>
+                    <td>
+                        <div class="channel-name">
+                            ${ch.logo ? `<img src="${ch.logo}" class="channel-logo" onerror="this.style.display='none'">` : ''}
+                            ${escapeHtml(ch.name)}
+                        </div>
+                    </td>
+                    <td><span class="badge badge-blue">${escapeHtml(ch.category || 'Genel')}</span></td>
+                </tr>
+            `).join('');
+            
+            const totalPages = Math.ceil(channels.length / previewPerPage);
+            document.getElementById('previewInfo').textContent = 
+                `${channels.length} kanaldan ${start + 1}-${Math.min(end, channels.length)} gösteriliyor`;
+            
+            let pagBtns = '';
+            if (previewPage > 1) pagBtns += `<button class="btn btn-sm btn-outline" onclick="previewGoPage(${previewPage-1})">◀</button>`;
+            pagBtns += `<span class="btn btn-sm btn-primary">${previewPage}/${totalPages || 1}</span>`;
+            if (previewPage < totalPages) pagBtns += `<button class="btn btn-sm btn-outline" onclick="previewGoPage(${previewPage+1})">▶</button>`;
+            document.getElementById('previewPagination').innerHTML = pagBtns;
+        }
+
+        function previewGoPage(p) { previewPage = p; renderPreview(); }
+
+        // İndirme
+        async function downloadM3U() {
+            if (selectedCategories.size === 0) {
+                showToast('En az bir kategori seçin!', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/generate-m3u', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ categories: [...selectedCategories] })
+                });
+                
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'playlist.m3u';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showToast('M3U dosyası indiriliyor!', 'success');
+            } catch {
+                showToast('İndirme hatası!', 'error');
+            }
+        }
+
+        // Link oluştur
+        function generateLink() {
+            const baseUrl = window.location.origin;
+            
+            // Tüm kanallar linki
+            const allLink = `${baseUrl}/api/playlist/${userToken}`;
+            document.getElementById('playlistLink').value = allLink;
+            
+            // Seçili kategoriler linki
+            if (selectedCategories.size > 0) {
+                const cats = encodeURIComponent([...selectedCategories].join(','));
+                const filteredLink = `${baseUrl}/api/playlist/${userToken}?categories=${cats}`;
+                document.getElementById('filteredLink').value = filteredLink;
+            } else {
+                document.getElementById('filteredLink').value = allLink;
+            }
+            
+            document.getElementById('linkArea').style.display = 'block';
+            showToast('Linkler oluşturuldu!', 'success');
+        }
+
+        function copyLink() {
+            const input = document.getElementById('playlistLink');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            showToast('Link kopyalandı!', 'success');
+        }
+
+        function copyFilteredLink() {
+            const input = document.getElementById('filteredLink');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            showToast('Link kopyalandı!', 'success');
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        // Utils
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        
+        function escapeAttr(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            toast.innerHTML = `${icons[type] || ''} ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
