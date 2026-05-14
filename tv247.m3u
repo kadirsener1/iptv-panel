@@ -1,23 +1,23 @@
 #EXTM3U
-# Updated: 2026-05-14 11:48:40 UTC
+# Updated: 2026-05-14 14:00:08 UTC
 
 #EXTINF:-1 tvg-id="bein-sports-1-turkey" tvg-name="beIN Sports 1 Turkey" group-title="TV247",beIN Sports 1 Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2MiIsInRzIjoxNzc4NzU5MzEzMTAyfQ==
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2MiIsInRzIjoxNzc4NzY3MjAxNzA5fQ==
 
 #EXTINF:-1 tvg-id="bein-sports-2-turkey" tvg-name="beIN Sports 2 Turkey" group-title="TV247",beIN Sports 2 Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2MyIsInRzIjoxNzc4NzU5MzE0MTAyfQ==
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2MyIsInRzIjoxNzc4NzY3MjAyNzA5fQ==
 
 #EXTINF:-1 tvg-id="bein-sports-3-turkey" tvg-name="beIN Sports 3 Turkey" group-title="TV247",beIN Sports 3 Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2NCIsInRzIjoxNzc4NzU5MzE1MTAyfQ==
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2NCIsInRzIjoxNzc4NzY3MjAzNzA5fQ==
 
 #EXTINF:-1 tvg-id="bein-sports-4-turkey" tvg-name="beIN Sports 4 Turkey" group-title="TV247",beIN Sports 4 Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2NyIsInRzIjoxNzc4NzU5MzE2MTAyfQ==
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiI2NyIsInRzIjoxNzc4NzY3MjA0NzEwfQ==
 
 #EXTINF:-1 tvg-id="bein-sports-5-turkey" tvg-name="beIN Sports 5 Turkey" group-title="TV247",beIN Sports 5 Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMDEwIiwidHMiOjE3Nzg3NTkzMTcxMDN9
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMDEwIiwidHMiOjE3Nzg3NjcyMDU3MTB9
 
 #EXTINF:-1 tvg-id="atv-turkey" tvg-name="atv Turkey" group-title="TV247",atv Turkey
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMDAwIiwidHMiOjE3Nzg3NTkzMTgxMDN9
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMDAwIiwidHMiOjE3Nzg3NjcyMDY3MTB9
 
 #EXTINF:-1 tvg-id="arena-sport-1-premium" tvg-name="arena sport 1 premium" group-title="TV247",arena sport 1 premium
-https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMzQiLCJ0cyI6MTc3ODc1OTMxOTEwM30=
+https://chat.cfbu247.sbs/api/proxy/playlist?token=eyJjaGFubmVsSWQiOiIxMzQiLCJ0cyI6MTc3ODc2NzIwNzcxMH0=
