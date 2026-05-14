@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üye Ol - IPTV Panel</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="logo-area">📝</div>
+            <h1>Üye Ol</h1>
+            <p class="subtitle">Yeni hesap oluşturun</p>
+            
+            <div id="alert" style="display:none"></div>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" class="form-control" id="username" placeholder="Kullanıcı adınız" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" class="form-control" id="email" placeholder="ornek@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" class="form-control" id="password" placeholder="En az 6 karakter" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Şifre Tekrar</label>
+                    <input type="password" class="form-control" id="password2" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+                <button type="submit" class="btn btn-green btn-block btn-lg">📝 Üye Ol</button>
+            </form>
+            
+            <div class="auth-links">
+                Zaten hesabınız var mı? <a href="/login">Giriş Yap</a>
+                <br><br>
+                <a href="/">🏠 Ana Sayfa</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertDiv = document.getElementById('alert');
+            
+            const password = document.getElementById('password').value;
+            const password2 = document.getElementById('password2').value;
+            
+            if (password !== password2) {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.textContent = '❌ Şifreler eşleşmiyor!';
+                alertDiv.style.display = 'flex';
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        email: document.getElementById('email').value,
+                        password
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alertDiv.className = 'alert alert-success';
+                    alertDiv.textContent = '✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...';
+                    alertDiv.style.display = 'flex';
+                    setTimeout(() => window.location.href = '/login', 1500);
+                } else {
+                    alertDiv.className = 'alert alert-error';
+                    alertDiv.textContent = '❌ ' + data.error;
+                    alertDiv.style.display = 'flex';
+                }
+            } catch (err) {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.textContent = '❌ Bağlantı hatası';
+                alertDiv.style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>
