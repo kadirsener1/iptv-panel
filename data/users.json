@@ -1,1 +1,14 @@
-
+[
+  {
+    "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "username": "admin",
+    "password": "$2a$10$Uo7pE1Z2YtNEMV9QWvbe1.kQRE0aN8P/T03K8l8XFvHmW6Bae0P0K",
+    "isAdmin": true,
+    "allowedCategories": [
+      "Spor",
+      "Sinema",
+      "Belgesel"
+    ],
+    "token": "adm99"
+  }
+]
