@@ -2,72 +2,74 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>IPTV Kullanıcı Paneli</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Üye Paneli</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-slate-900 text-white p-8">
+<body class="bg-slate-900 text-white p-4 sm:p-8">
     <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-indigo-400">Hoş Geldiniz, <span id="usernameLabel" class="text-white"></span></h1>
-            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Çıkış Yap</button>
+        <div class="flex justify-between items-center mb-8 bg-slate-800 p-4 rounded-lg border border-slate-700">
+            <h1 class="text-xl font-bold text-indigo-400">👋 Hoş Geldiniz, <span id="usernameLabel" class="text-white font-mono"></span></h1>
+            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-xs font-bold cursor-pointer">Çıkış Yap</button>
         </div>
 
         <!-- M3U Link Alanı -->
-        <div class="bg-slate-800 p-6 rounded-lg mb-8 border border-indigo-500/30">
-            <h2 class="text-xl font-bold mb-2 text-indigo-400">Size Özel M3U Oynatma Listesi Linki</h2>
-            <p class="text-sm text-slate-400 mb-4">Aşağıdaki linki kopyalayıp Smart TV, VLC Player, GSE IPTV veya PotPlayer gibi programlara doğrudan yapıştırabilirsiniz.</p>
-            <div class="flex gap-2">
-                <input type="text" id="m3uUrlInput" readonly class="w-full p-3 bg-slate-900 rounded border border-slate-700 text-emerald-400 font-mono text-sm focus:outline-none">
-                <button onclick="navigator.clipboard.writeText(document.getElementById('m3uUrlInput').value); alert('Link Kopyalandı!')" class="bg-emerald-600 hover:bg-emerald-700 px-6 rounded font-semibold">Kopyala</button>
+        <div class="bg-slate-800 p-6 rounded-lg mb-8 border border-emerald-500/30 shadow-lg shadow-emerald-950/20">
+            <h2 class="text-lg font-bold mb-1 text-emerald-400">Size Özel Canlı M3U URL Bağlantısı</h2>
+            <p class="text-xs text-slate-400 mb-4">Aşağıdaki linki kopyalayarak tüm IPTV programlarında (VLC, GSE, Smart IPTV vb.) doğrudan kullanabilirsiniz.</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="m3uUrlInput" readonly class="w-full p-3 bg-slate-950 rounded border border-slate-700 text-emerald-400 font-mono text-xs focus:outline-none">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('m3uUrlInput').value); alert('IPTV Oynatma linkiniz panoya kopyalandı!')" class="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 sm:py-0 rounded font-semibold text-sm transition shrink-0 cursor-pointer">Linki Kopyala</button>
             </div>
         </div>
 
         <!-- Kategori Seçim Listesi -->
-        <div class="bg-slate-800 p-6 rounded-lg">
-            <h2 class="text-xl font-bold mb-2">Listenizde Listelenmesini İstediğiniz Kategorileri Seçin</h2>
-            <p class="text-sm text-slate-400 mb-6">Sadece işaretlediğiniz kategorilerdeki kanallar M3U dosyanızda görünecektir.</p>
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+            <h2 class="text-lg font-bold mb-1 text-white">Paket / Kategori Filtrele</h2>
+            <p class="text-xs text-slate-400 mb-6">M3U listenizde sadece seçtiğiniz kategorideki kanallar yer alacaktır.</p>
             
-            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-                <!-- Dinamik Kategoriler Buraya Gelecek -->
+            <div id="categoriesContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <!-- Kategoriler API üzerinden buraya listelenecek -->
             </div>
 
-            <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold w-full transition">Seçilen Kategorileri Güncelle ve Kaydet</button>
+            <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold w-full transition tracking-wide text-sm cursor-pointer">Seçimleri Kaydet ve Linki Güncelle</button>
         </div>
     </div>
 
     <script>
         const token = localStorage.getItem('token');
         const username = localStorage.getItem('username');
-        if(!token) window.location.href = '/login.html';
+        if(!token || token === 'admin-master-token') window.location.href = '/login.html';
         document.getElementById('usernameLabel').innerText = username;
 
         async function initUserPanel() {
-            // 1. Tüm kanallardan benzersiz kategorileri çek
+            // 1. Havuzdaki tüm kategorileri topla
             const chRes = await fetch('/api/admin/channels');
             const channels = await chRes.json();
             const allCategories = [...new Set(channels.map(c => c.category))];
 
-            // 2. Kullanıcı verilerini çek (Önceki seçtikleri)
+            // 2. Kullanıcının mevcut izin verilen kategorilerini al
             const userRes = await fetch(`/api/user/info?token=${token}`);
+            if(!userRes.ok) { window.location.href = '/login.html'; return; }
             const userData = await userRes.json();
 
             document.getElementById('m3uUrlInput').value = userData.playlistUrl;
 
-            // 3. Kategorileri Arayüze Bas
+            // 3. Ekrana Bas
             const container = document.getElementById('categoriesContainer');
             container.innerHTML = '';
             
             if(allCategories.length === 0) {
-                container.innerHTML = '<p class="text-slate-500 col-span-3">Henüz sistemde kategori bulunmuyor. Adminin kanal yüklemesi gerekir.</p>';
+                container.innerHTML = '<p class="text-slate-500 col-span-3 text-sm text-center py-4">Sistemde henüz aktif kategori veya kanal bulunmuyor.</p>';
                 return;
             }
 
             allCategories.forEach(cat => {
                 const isChecked = userData.allowedCategories.includes(cat) ? 'checked' : '';
                 container.innerHTML += `
-                    <label class="flex items-center space-x-3 bg-slate-700/50 p-3 rounded-lg cursor-pointer hover:bg-slate-700 transition">
-                        <input type="checkbox" value="${cat}" ${isChecked} class="w-5 h-5 accent-indigo-500 rounded">
-                        <span class="text-sm font-medium">${cat}</span>
+                    <label class="flex items-center space-x-3 bg-slate-700/40 p-3 rounded-lg cursor-pointer hover:bg-slate-700/80 transition border border-slate-700/60 select-none">
+                        <input type="checkbox" value="${cat}" ${isChecked} class="w-4 h-4 accent-indigo-500 rounded">
+                        <span class="text-xs font-semibold text-slate-200">${cat}</span>
                     </label>
                 `;
             });
@@ -84,7 +86,7 @@
             });
             const data = await res.json();
             if(data.success) {
-                alert('Oynatma listeniz başarıyla güncellendi!');
+                alert('Listeniz güncellendi! IPTV programınızdan yenileyebilirsiniz.');
                 initUserPanel();
             }
         }
