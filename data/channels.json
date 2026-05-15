@@ -1,1 +1,20 @@
-
+[
+  {
+    "id": "ch-101-active-sport",
+    "name": "TRT Spor (Örnek Canlı)",
+    "url": "https://trt.asmncdn.com/ch/trtspor/playlist.m3u8",
+    "category": "Spor"
+  },
+  {
+    "id": "ch-102-active-cinema",
+    "name": "Sinema TV (Örnek)",
+    "url": "http://ornek-iptv-linki.com/live/sinema1.ts",
+    "category": "Sinema"
+  },
+  {
+    "id": "ch-103-active-doc",
+    "name": "National Geographic (Örnek)",
+    "url": "http://ornek-iptv-linki.com/live/belgesel1.ts",
+    "category": "Belgesel"
+  }
+]
