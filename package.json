@@ -1,12 +1,15 @@
 {
-  "name": "iptv-link-merkezi",
+  "name": "iptv-management-panel",
   "version": "1.0.0",
-  "description": "Canli M3U Link Uretici",
+  "description": "Full-featured IPTV Panel",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^9.0.1"
   }
 }
