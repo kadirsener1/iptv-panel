@@ -2,55 +2,44 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Portal - Giriş</title>
+    <title>IPTV Panel - Giriş</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-900 text-white flex items-center justify-center h-screen">
-    <div class="bg-slate-800 p-8 rounded-lg shadow-xl w-96 border border-slate-700">
-        <h2 class="text-2xl font-bold mb-2 text-center text-indigo-400">IPTV Portal</h2>
-        <p class="text-slate-400 text-xs text-center mb-6">Yönetim ve M3U Özelleştirme Paneli</p>
+    <div class="bg-slate-800 p-8 rounded-lg shadow-xl w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">IPTV Portal Giriş</h2>
         <form id="loginForm" class="space-y-4">
             <div>
-                <label class="block text-sm mb-1 text-slate-300">Kullanıcı Adı</label>
-                <input type="text" id="username" class="w-full p-2.5 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" placeholder="admin veya yeni üyelik adı" required>
+                <label class="block text-sm mb-1">Kullanıcı Adı</label>
+                <input type="text" id="username" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" required>
             </div>
             <div>
-                <label class="block text-sm mb-1 text-slate-300">Şifre</label>
-                <input type="password" id="password" class="w-full p-2.5 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" placeholder="••••••••" required>
+                <label class="block text-sm mb-1">Şifre</label>
+                <input type="password" id="password" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" required>
             </div>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2.5 rounded font-semibold transition cursor-pointer">Giriş Yap / Otomatik Kayıt Ol</button>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded font-semibold transition">Giriş Yap / Kayıt Ol</button>
         </form>
     </div>
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value.trim();
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
 
-                if (data.success) {
-                    localStorage.setItem('role', data.role);
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('username', data.username);
-                    
-                    if (data.role === 'admin') {
-                        window.location.href = '/admin.html';
-                    } else {
-                        window.location.href = '/user.html';
-                    }
-                } else {
-                    alert(data.message || 'Giriş başarısız.');
-                }
-            } catch (err) {
-                alert('Sunucuyla bağlantı kurulamadı!');
+            if (data.success) {
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                window.location.href = data.role === 'admin' ? '/admin.html' : '/user.html';
+            } else {
+                alert(data.message || 'Hata oluştu');
             }
         });
     </script>
