@@ -12,59 +12,56 @@
             <button onclick="fetch('/api/logout').then(()=>window.location.href='/login.html')" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600">Çıkış</button>
         </div>
 
-        <!-- M3U Link Alanı -->
         <div class="bg-blue-950 border border-blue-800 p-6 rounded-lg mb-8">
             <h2 class="text-lg font-bold mb-2 text-blue-300">Size Özel M3U Bağlantısı</h2>
-            <p class="text-xs text-gray-400 mb-4">Bu linki kopyalayıp Smart TV, VLC, GSE IPTV veya PotPlayer gibi uygulamalara yapıştırın.</p>
+            <p class="text-xs text-gray-400 mb-4">Bu linki kopyalayıp Smart TV veya IPTV oynatıcınıza yapıştırın.</p>
             <div class="flex gap-2">
-                <input type="text" id="m3uUrl" readonly class="w-full p-2 bg-gray-800 rounded border border-gray-700 text-sm text-green-400 select-all">
+                <input type="text" id="m3uUrl" readonly class="w-full p-2 bg-gray-800 rounded border border-gray-700 text-sm text-green-400 select-all" value="Yükleniyor...">
             </div>
         </div>
 
-        <!-- Kategori Seçim Alanı -->
         <div class="bg-gray-800 p-6 rounded-lg">
             <h2 class="text-xl font-bold mb-2">Listenizde Olmasını İstediğiniz Kategorileri Seçin</h2>
-            <p class="text-sm text-gray-400 mb-6">Yalnızca işaretlediğiniz kategorilerdeki kanallar TV uygulamanızda görünecektir.</p>
+            <p class="text-sm text-gray-400 mb-6">Yalnızca işaretlediğiniz kategorilerdeki kanallar listenizde görünecektir.</p>
             
-            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-                <!-- Dinamik Kategoriler -->
-            </div>
+            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6"></div>
 
-            <button onclick="saveCategories()" class="bg-blue-600 px-6 py-3 rounded font-bold hover:bg-blue-700 transition w-full">Listemi Güncelle / Linki Aktif Et</button>
+            <button onclick="saveCategories()" class="bg-blue-600 px-6 py-3 rounded font-bold hover:bg-blue-700 transition w-full">Listemi Güncelle</button>
         </div>
     </div>
 
     <script>
-        let userToken = "";
-
         async function init() {
-            // Kullanıcı bilgilerini ve tokeni al
             const meRes = await fetch('/api/me');
+            if(meRes.status === 401) {
+                window.location.href = '/login.html';
+                return;
+            }
             const user = await meRes.json();
-            userToken = user.token;
-            document.getElementById('m3uUrl').value = `${window.location.origin}/get-m3u/${userToken}`;
+            
+            if(user && user.token) {
+                document.getElementById('m3uUrl').value = `${window.location.origin}/get-m3u/${user.token}`;
+            }
 
-            // Kategorileri listele
             const catRes = await fetch('/api/user/categories');
             const allCategories = await catRes.json();
 
-            // Kullanıcının kayıtlı tercihlerini al
             const myCatRes = await fetch('/api/user/my-categories');
             const myCategories = await myCatRes.json();
 
             const container = document.getElementById('categoriesContainer');
             container.innerHTML = '';
 
-            if(allCategories.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 col-span-3">Henüz sistemde kategori yok (Admin kanal eklemeli).</p>';
+            if(!allCategories || allCategories.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 col-span-3">Henüz sistemde kategori yok (Önce Admin kanal eklemeli).</p>';
                 return;
             }
 
             allCategories.forEach(cat => {
-                const checked = myCategories.includes(cat) ? 'checked' : '';
+                const checked = (Array.isArray(myCategories) && myCategories.includes(cat)) ? 'checked' : '';
                 container.innerHTML += `
                     <label class="flex items-center space-x-3 bg-gray-700 p-3 rounded cursor-pointer hover:bg-gray-600 transition">
-                        <input type="checkbox" value="${cat}" ${checked} class="w-5 h-5 text-blue-600 rounded bg-gray-800 border-gray-600 focus:ring-blue-500">
+                        <input type="checkbox" value="${cat}" ${checked} class="w-5 h-5 text-blue-600 rounded bg-gray-800 border-gray-600">
                         <span class="text-sm font-medium">${cat}</span>
                     </label>
                 `;
@@ -82,7 +79,7 @@
             });
 
             if(res.ok) {
-                alert('Oynatma listeniz başarıyla güncellendi! IPTV programınızdan yenileyebilirsiniz.');
+                alert('Oynatma listeniz güncellendi!');
             } else {
                 alert('Bir hata oluştu.');
             }
