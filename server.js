@@ -8,28 +8,31 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- RENDER.COM KALICI DİSK (VOLUME) YAPILANDIRMASI ---
-// Eğer Render'da DISK_PATH tanımladıysanız orayı, yoksa yerelde projenin içindeki 'data' klasörünü kullanır.
-const DATA_DIR = process.env.DISK_PATH || path.join(__dirname, 'data');
+// --- GARANTİLİ DOSYA YOLU KONTROLÜ ---
+let DATA_DIR = path.join(__dirname, 'data');
 
-// Veritabanı klasörünü güvenli bir şekilde oluşturma
-if (!fs.existsSync(DATA_DIR)) {
+// Eğer Render diski aktifse ve tanımlıysa onu kullan, hata verirse yerel klasöre dön
+if (process.env.DISK_PATH) {
     try {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-        console.log(`Veri klasörü oluşturuldu: ${DATA_DIR}`);
-    } catch (err) {
-        console.error("Klasör oluşturulurken hata çıktı:", err);
+        if (!fs.existsSync(process.env.DISK_PATH)) {
+            fs.mkdirSync(process.env.DISK_PATH, { recursive: true });
+        }
+        DATA_DIR = process.env.DISK_PATH;
+    } catch (e) {
+        console.log("Render disk yoluna erişilemedi, yerel klasör kullanılacak.");
     }
+}
+
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 
-// JSON Dosyalarını ilk kurulumda hatasız şekilde başlatma
-if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2), 'utf8');
-if (!fs.existsSync(CHANNELS_FILE)) fs.writeFileSync(CHANNELS_FILE, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]', 'utf8');
+if (!fs.existsSync(CHANNELS_FILE)) fs.writeFileSync(CHANNELS_FILE, '[]', 'utf8');
 
-// Veri okuma ve yazma yardımcı fonksiyonları
 const readData = (file) => {
     try {
         const content = fs.readFileSync(file, 'utf8');
@@ -38,6 +41,15 @@ const readData = (file) => {
         return [];
     }
 };
+
+const writeData = (file, data) => {
+    try {
+        fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error("Dosya yazma hatası:", e);
+    }
+};
+// ... Kodun geri kalanı aynı kalacak
 
 const writeData = (file, data) => {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
