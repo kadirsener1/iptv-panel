@@ -2,75 +2,44 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş Yap - IPTV Panel</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>IPTV Panel - Giriş</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    <div class="auth-container">
-        <div class="auth-box">
-            <div class="logo-area">📡</div>
-            <h1>Giriş Yap</h1>
-            <p class="subtitle">Hesabınıza giriş yapın</p>
-            
-            <div id="alert" style="display:none"></div>
-            
-            <form id="loginForm">
-                <div class="form-group">
-                    <label>Kullanıcı Adı</label>
-                    <input type="text" class="form-control" id="username" placeholder="Kullanıcı adınız" required>
-                </div>
-                <div class="form-group">
-                    <label>Şifre</label>
-                    <input type="password" class="form-control" id="password" placeholder="Şifreniz" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block btn-lg">🔑 Giriş Yap</button>
-            </form>
-            
-            <div class="auth-links">
-                Hesabınız yok mu? <a href="/register">Üye Ol</a>
-                <br><br>
-                <a href="/admin">👑 Admin Girişi</a> · <a href="/">🏠 Ana Sayfa</a>
+<body class="bg-slate-900 text-white flex items-center justify-center h-screen">
+    <div class="bg-slate-800 p-8 rounded-lg shadow-xl w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">IPTV Portal Giriş</h2>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm mb-1">Kullanıcı Adı</label>
+                <input type="text" id="username" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" required>
             </div>
-        </div>
+            <div>
+                <label class="block text-sm mb-1">Şifre</label>
+                <input type="password" id="password" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" required>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded font-semibold transition">Giriş Yap / Kayıt Ol</button>
+        </form>
     </div>
-
     <script>
-        // Oturum kontrolü
-        fetch('/api/session').then(r => r.json()).then(data => {
-            if (data.loggedIn && !data.isAdmin) window.location.href = '/dashboard';
-        });
-
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const alertDiv = document.getElementById('alert');
-            
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: document.getElementById('username').value,
-                        password: document.getElementById('password').value
-                    })
-                });
-                
-                const data = await res.json();
-                
-                if (res.ok) {
-                    alertDiv.className = 'alert alert-success';
-                    alertDiv.textContent = '✅ Giriş başarılı! Yönlendiriliyorsunuz...';
-                    alertDiv.style.display = 'flex';
-                    setTimeout(() => window.location.href = '/dashboard', 1000);
-                } else {
-                    alertDiv.className = 'alert alert-error';
-                    alertDiv.textContent = '❌ ' + data.error;
-                    alertDiv.style.display = 'flex';
-                }
-            } catch (err) {
-                alertDiv.className = 'alert alert-error';
-                alertDiv.textContent = '❌ Bağlantı hatası';
-                alertDiv.style.display = 'flex';
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                window.location.href = data.role === 'admin' ? '/admin.html' : '/user.html';
+            } else {
+                alert(data.message || 'Hata oluştu');
             }
         });
     </script>
