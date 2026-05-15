@@ -8,6 +8,7 @@
 <body class="bg-gray-900 text-white h-screen flex items-center justify-center">
     <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-96">
         <h2 class="text-2xl font-bold mb-6 text-center text-blue-500">IPTV Portal</h2>
+        <div id="errorBox" class="hidden bg-red-600 text-white text-sm p-2 rounded mb-4 text-center"></div>
         <div class="mb-4">
             <label class="block text-sm mb-2">Kullanıcı Adı</label>
             <input type="text" id="username" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500">
@@ -21,26 +22,49 @@
     </div>
 
     <script>
+        function showError(msg) {
+            const box = document.getElementById('errorBox');
+            box.innerText = msg;
+            box.classList.remove('hidden');
+        }
+
         async function login() {
+            const userVal = document.getElementById('username').value;
+            const passVal = document.getElementById('password').value;
+
+            if(!userVal || !passVal) return showError('Lütfen tüm alanları doldurun.');
+
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: b('username'), password: b('password')})
+                body: JSON.stringify({ username: userVal, password: passVal })
             });
             const data = await res.json();
-            if(data.success) window.location.href = data.isAdmin ? '/admin.html' : '/user.html';
-            else alert(data.error);
+            if(data.success) {
+                window.location.href = data.isAdmin ? '/admin.html' : '/user.html';
+            } else {
+                showError(data.error || 'Giriş başarısız.');
+            }
         }
+
         async function register() {
+            const userVal = document.getElementById('username').value;
+            const passVal = document.getElementById('password').value;
+
+            if(!userVal || !passVal) return showError('Lütfen tüm alanları doldurun.');
+
             const res = await fetch('/api/register', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: b('username'), password: b('password')})
+                body: JSON.stringify({ username: userVal, password: passVal })
             });
             const data = await res.json();
-            alert(data.message || data.error);
+            if(data.success) {
+                alert(data.message);
+            } else {
+                showError(data.error || 'Kayıt başarısız.');
+            }
         }
-        const b = (id) => document.getElementById(id).value;
     </script>
 </body>
 </html>
