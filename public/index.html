@@ -2,20 +2,105 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Panel</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>IPTV Link Merkezim</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    <div class="hero">
-        <div class="logo-big">📡</div>
-        <h1>IPTV Yönetim Paneli</h1>
-        <p>Kendi IPTV kanallarınızı yönetin, kategorilere ayırın ve istediğiniz cihazda izleyin.</p>
-        <div class="hero-actions">
-            <a href="/login" class="btn btn-primary btn-lg">🔑 Giriş Yap</a>
-            <a href="/register" class="btn btn-green btn-lg">📝 Üye Ol</a>
-            <a href="/admin" class="btn btn-outline btn-lg">👑 Admin Panel</a>
+<body class="bg-slate-900 text-white min-h-screen p-4 sm:p-8">
+    <div class="max-w-3xl mx-auto">
+        
+        <!-- GİRİŞ -->
+        <div id="loginBox" class="bg-slate-800 p-8 rounded-lg max-w-md mx-auto my-10 border border-slate-700">
+            <h2 class="text-xl font-bold text-center text-indigo-400 mb-6">IPTV Profil Girişi</h2>
+            <div class="space-y-4">
+                <input type="text" id="username" placeholder="Kullanıcı Adı" class="w-full p-2.5 bg-slate-700 rounded focus:outline-none">
+                <input type="password" id="password" placeholder="Şifre" class="w-full p-2.5 bg-slate-700 rounded focus:outline-none">
+                <button onclick="login()" class="w-full bg-indigo-600 p-2.5 rounded font-bold cursor-pointer">Giriş Yap / Kayıt Ol</button>
+            </div>
         </div>
+
+        <!-- PANEL -->
+        <div id="panelBox" class="hidden space-y-6">
+            <div class="flex justify-between bg-slate-800 p-4 rounded border border-slate-700">
+                <span>Hoş Geldin: <b id="lblUser" class="text-emerald-400"></b></span>
+                <button onclick="location.reload()" class="text-red-400 text-xs font-bold">Çıkış</button>
+            </div>
+
+            <!-- CANLI LİNK -->
+            <div class="bg-slate-800 p-6 rounded border border-emerald-500/30">
+                <h3 class="text-emerald-400 font-bold mb-1">IPTV Program Linkiniz (M3U URL)</h3>
+                <p class="text-xs text-slate-400 mb-3">Bu linki IPTV programınıza (VLC, Smart TV) yapıştırın. Panelden seçimleri değiştirdikçe link otomatik güncellenir.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="m3uLinkInput" readonly class="w-full p-3 bg-slate-950 rounded text-emerald-400 font-mono text-xs focus:outline-none">
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('m3uLinkInput').value); alert('Link Kopyalandı!')" class="bg-emerald-600 px-4 rounded text-xs font-bold cursor-pointer">Kopyala</button>
+                </div>
+            </div>
+
+            <!-- KATEGORİ SEÇİMİ -->
+            <div class="bg-slate-800 p-6 rounded border border-slate-700">
+                <h3 class="font-bold mb-4">Listenizde Görünmesini İstediğiniz Kategorileri Seçin</h3>
+                <div id="catContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 mb-4"></div>
+                <button onclick="save()" class="w-full bg-indigo-600 py-3 rounded font-bold cursor-pointer text-sm">Seçimleri Kaydet ve Linki Aktif Et</button>
+            </div>
+        </div>
+
     </div>
+
+    <script>
+        let currentUsername = "";
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if(res.ok) {
+                currentUsername = data.username;
+                document.getElementById('loginBox').classList.add('hidden');
+                document.getElementById('panelBox').classList.remove('hidden');
+                document.getElementById('lblUser').innerText = currentUsername;
+                
+                // Program linkini ata
+                document.getElementById('m3uLinkInput').value = `${window.location.origin}/playlist/${currentUsername}.m3u`;
+                
+                loadCategories(data.allowedCategories);
+            } else {
+                alert(data.message);
+            }
+        }
+
+        async function loadCategories(userCats) {
+            const res = await fetch('/api/categories');
+            const allCats = await res.json();
+            const container = document.getElementById('catContainer');
+            container.innerHTML = '';
+
+            allCats.forEach(cat => {
+                const checked = userCats.includes(cat) ? 'checked' : '';
+                container.innerHTML += `
+                    <label class="flex items-center space-x-3 bg-slate-700 p-2.5 rounded cursor-pointer text-xs">
+                        <input type="checkbox" value="${cat}" ${checked} class="w-4 h-4 accent-indigo-500">
+                        <span class="truncate">${cat}</span>
+                    </label>`;
+            });
+        }
+
+        async function save() {
+            const checked = document.querySelectorAll('#catContainer input:checked');
+            const categories = Array.from(checked).map(c => c.value);
+
+            await fetch('/api/save-categories', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: currentUsername, categories })
+            });
+            alert('Listeniz güncellendi! IPTV programınızı kapatıp açmanız yeterlidir.');
+        }
+    </script>
 </body>
 </html>
