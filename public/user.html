@@ -2,96 +2,93 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Üye Paneli</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>IPTV Kullanıcı Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white p-4 sm:p-8">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-8 bg-slate-800 p-4 rounded-lg border border-slate-700">
-            <h1 class="text-xl font-bold text-indigo-400">👋 Hoş Geldiniz, <span id="usernameLabel" class="text-white font-mono"></span></h1>
-            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-xs font-bold cursor-pointer">Çıkış Yap</button>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-2xl font-bold text-blue-400">Kişisel IPTV Playlist Hazırlayıcı</h1>
+            <button onclick="fetch('/api/logout').then(()=>window.location.href='/login.html')" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600">Çıkış</button>
         </div>
 
         <!-- M3U Link Alanı -->
-        <div class="bg-slate-800 p-6 rounded-lg mb-8 border border-emerald-500/30 shadow-lg shadow-emerald-950/20">
-            <h2 class="text-lg font-bold mb-1 text-emerald-400">Size Özel Canlı M3U URL Bağlantısı</h2>
-            <p class="text-xs text-slate-400 mb-4">Aşağıdaki linki kopyalayarak tüm IPTV programlarında (VLC, GSE, Smart IPTV vb.) doğrudan kullanabilirsiniz.</p>
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="m3uUrlInput" readonly class="w-full p-3 bg-slate-950 rounded border border-slate-700 text-emerald-400 font-mono text-xs focus:outline-none">
-                <button onclick="navigator.clipboard.writeText(document.getElementById('m3uUrlInput').value); alert('IPTV Oynatma linkiniz panoya kopyalandı!')" class="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 sm:py-0 rounded font-semibold text-sm transition shrink-0 cursor-pointer">Linki Kopyala</button>
+        <div class="bg-blue-950 border border-blue-800 p-6 rounded-lg mb-8">
+            <h2 class="text-lg font-bold mb-2 text-blue-300">Size Özel M3U Bağlantısı</h2>
+            <p class="text-xs text-gray-400 mb-4">Bu linki kopyalayıp Smart TV, VLC, GSE IPTV veya PotPlayer gibi uygulamalara yapıştırın.</p>
+            <div class="flex gap-2">
+                <input type="text" id="m3uUrl" readonly class="w-full p-2 bg-gray-800 rounded border border-gray-700 text-sm text-green-400 select-all">
             </div>
         </div>
 
-        <!-- Kategori Seçim Listesi -->
-        <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
-            <h2 class="text-lg font-bold mb-1 text-white">Paket / Kategori Filtrele</h2>
-            <p class="text-xs text-slate-400 mb-6">M3U listenizde sadece seçtiğiniz kategorideki kanallar yer alacaktır.</p>
+        <!-- Kategori Seçim Alanı -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-2">Listenizde Olmasını İstediğiniz Kategorileri Seçin</h2>
+            <p class="text-sm text-gray-400 mb-6">Yalnızca işaretlediğiniz kategorilerdeki kanallar TV uygulamanızda görünecektir.</p>
             
-            <div id="categoriesContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                <!-- Kategoriler API üzerinden buraya listelenecek -->
+            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                <!-- Dinamik Kategoriler -->
             </div>
 
-            <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold w-full transition tracking-wide text-sm cursor-pointer">Seçimleri Kaydet ve Linki Güncelle</button>
+            <button onclick="saveCategories()" class="bg-blue-600 px-6 py-3 rounded font-bold hover:bg-blue-700 transition w-full">Listemi Güncelle / Linki Aktif Et</button>
         </div>
     </div>
 
     <script>
-        const token = localStorage.getItem('token');
-        const username = localStorage.getItem('username');
-        if(!token || token === 'admin-master-token') window.location.href = '/login.html';
-        document.getElementById('usernameLabel').innerText = username;
+        let userToken = "";
 
-        async function initUserPanel() {
-            // 1. Havuzdaki tüm kategorileri topla
-            const chRes = await fetch('/api/admin/channels');
-            const channels = await chRes.json();
-            const allCategories = [...new Set(channels.map(c => c.category))];
+        async function init() {
+            // Kullanıcı bilgilerini ve tokeni al
+            const meRes = await fetch('/api/me');
+            const user = await meRes.json();
+            userToken = user.token;
+            document.getElementById('m3uUrl').value = `${window.location.origin}/get-m3u/${userToken}`;
 
-            // 2. Kullanıcının mevcut izin verilen kategorilerini al
-            const userRes = await fetch(`/api/user/info?token=${token}`);
-            if(!userRes.ok) { window.location.href = '/login.html'; return; }
-            const userData = await userRes.json();
+            // Kategorileri listele
+            const catRes = await fetch('/api/user/categories');
+            const allCategories = await catRes.json();
 
-            document.getElementById('m3uUrlInput').value = userData.playlistUrl;
+            // Kullanıcının kayıtlı tercihlerini al
+            const myCatRes = await fetch('/api/user/my-categories');
+            const myCategories = await myCatRes.json();
 
-            // 3. Ekrana Bas
             const container = document.getElementById('categoriesContainer');
             container.innerHTML = '';
-            
+
             if(allCategories.length === 0) {
-                container.innerHTML = '<p class="text-slate-500 col-span-3 text-sm text-center py-4">Sistemde henüz aktif kategori veya kanal bulunmuyor.</p>';
+                container.innerHTML = '<p class="text-gray-500 col-span-3">Henüz sistemde kategori yok (Admin kanal eklemeli).</p>';
                 return;
             }
 
             allCategories.forEach(cat => {
-                const isChecked = userData.allowedCategories.includes(cat) ? 'checked' : '';
+                const checked = myCategories.includes(cat) ? 'checked' : '';
                 container.innerHTML += `
-                    <label class="flex items-center space-x-3 bg-slate-700/40 p-3 rounded-lg cursor-pointer hover:bg-slate-700/80 transition border border-slate-700/60 select-none">
-                        <input type="checkbox" value="${cat}" ${isChecked} class="w-4 h-4 accent-indigo-500 rounded">
-                        <span class="text-xs font-semibold text-slate-200">${cat}</span>
+                    <label class="flex items-center space-x-3 bg-gray-700 p-3 rounded cursor-pointer hover:bg-gray-600 transition">
+                        <input type="checkbox" value="${cat}" ${checked} class="w-5 h-5 text-blue-600 rounded bg-gray-800 border-gray-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium">${cat}</span>
                     </label>
                 `;
             });
         }
 
-        async function saveUserCategories() {
+        async function saveCategories() {
             const checkboxes = document.querySelectorAll('#categoriesContainer input[type="checkbox"]:checked');
-            const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
+            const selected = Array.from(checkboxes).map(cb => cb.value);
 
-            const res = await fetch('/api/user/save-categories', {
+            const res = await fetch('/api/user/my-categories', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, categories: selectedCategories })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({categories: selected})
             });
-            const data = await res.json();
-            if(data.success) {
-                alert('Listeniz güncellendi! IPTV programınızdan yenileyebilirsiniz.');
-                initUserPanel();
+
+            if(res.ok) {
+                alert('Oynatma listeniz başarıyla güncellendi! IPTV programınızdan yenileyebilirsiniz.');
+            } else {
+                alert('Bir hata oluştu.');
             }
         }
 
-        initUserPanel();
+        init();
     </script>
 </body>
 </html>
