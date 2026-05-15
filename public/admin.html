@@ -2,55 +2,50 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Kontrol Merkezi (Admin)</title>
+    <title>IPTV Yönetim Paneli (Admin)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-slate-900 text-white p-4 sm:p-8">
+<body class="bg-slate-900 text-white p-8">
     <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8 bg-slate-800 p-4 rounded-lg border border-slate-700">
-            <h1 class="text-2xl font-bold text-indigo-400">📺 IPTV Yönetici Kontrol Paneli</h1>
-            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-semibold cursor-pointer">Çıkış Yap</button>
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-400">IPTV Admin Kontrol Paneli</h1>
+            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Çıkış Yap</button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Manuel Kanal Ekleme -->
-            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 h-fit">
-                <h2 class="text-lg font-bold mb-4 text-emerald-400">Tekil Kanal Ekle</h2>
+            <div class="bg-slate-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-emerald-400">Tekil Kanal Ekle</h2>
                 <form id="channelForm" class="space-y-3">
-                    <input type="text" id="chName" placeholder="Kanal Adı (örn: TRT 1)" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none" required>
-                    <input type="text" id="chCategory" placeholder="Kategori (örn: Ulusal, Spor)" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none" required>
-                    <input type="text" id="chUrl" placeholder="Yayın URL (m3u8/ts)" class="w-full p-2 bg-slate-700 rounded border border-slate-600 focus:outline-none" required>
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 p-2 rounded font-semibold cursor-pointer">Sisteme Ekle</button>
+                    <input type="text" id="chName" placeholder="Kanal Adı" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <input type="text" id="chCategory" placeholder="Kategori (örn: Spor, Sinema)" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <input type="text" id="chUrl" placeholder="Yayın URL'si (m3u8)" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 p-2 rounded font-semibold">Kanalı Kaydet</button>
                 </form>
             </div>
 
             <!-- M3U Toplu Import -->
-            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 lg:col-span-2">
-                <h2 class="text-lg font-bold mb-2 text-indigo-400">Toplu M3U Yükleme Alanı</h2>
-                <p class="text-xs text-slate-400 mb-3">M3U metin içeriğini doğrudan aşağıdaki kutuya yapıştırıp yükleyebilirsiniz.</p>
-                <textarea id="m3uContent" rows="5" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Belgesel&quot;,Discovery Channel&#10;http://example.com/stream1.m3u8" class="w-full p-3 bg-slate-700 rounded border border-slate-600 text-xs font-mono focus:outline-none focus:border-indigo-500"></textarea>
-                <button onclick="importM3U()" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 p-2.5 rounded font-semibold transition cursor-pointer">M3U İçeriğini Çöz ve Listeye Dahil Et</button>
+            <div class="bg-slate-800 p-6 rounded-lg md:col-span-2">
+                <h2 class="text-xl font-bold mb-4 text-indigo-400">Toplu M3U Yükle (.m3u metnini yapıştırın)</h2>
+                <textarea id="m3uContent" rows="4" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Belgesel&quot;,Discovery&#10;http://ornek.com/stream.m3u8" class="w-full p-2 bg-slate-700 rounded border border-slate-600 text-xs font-mono"></textarea>
+                <button onclick="importM3U()" class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded font-semibold">M3U İçeriğini Çöz ve Ekle</button>
             </div>
         </div>
 
         <!-- Kanal Listesi -->
-        <div class="mt-8 bg-slate-800 p-6 rounded-lg border border-slate-700">
-            <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
-                <span>Havuzdaki Tüm Kanallar</span>
-                <span id="totalChannels" class="text-xs bg-slate-700 px-3 py-1 rounded-full text-indigo-300">0 Kanal</span>
-            </h2>
-            <div class="overflow-x-auto max-h-96">
+        <div class="mt-10 bg-slate-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">Sistemdeki Tüm Kanallar</h2>
+            <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-slate-700 text-slate-400 text-sm sticky top-0 bg-slate-800">
+                        <tr class="border-b border-slate-700 text-slate-400">
                             <th class="p-3">Kanal Adı</th>
                             <th class="p-3">Kategori</th>
                             <th class="p-3">Yayın Linki</th>
-                            <th class="p-3 text-right">İşlem</th>
+                            <th class="p-3">İşlem</th>
                         </tr>
                     </thead>
-                    <tbody id="channelTableBody" class="text-sm"></tbody>
+                    <tbody id="channelTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -62,24 +57,17 @@
         async function loadChannels() {
             const res = await fetch('/api/admin/channels');
             const channels = await res.json();
-            document.getElementById('totalChannels').innerText = `${channels.length} Kanal`;
-            
             const tbody = document.getElementById('channelTableBody');
             tbody.innerHTML = '';
             
-            if(channels.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sistemde henüz kayıtlı yayın yok.</td></tr>`;
-                return;
-            }
-
-            channels.reverse().forEach(ch => {
+            channels.forEach(ch => {
                 tbody.innerHTML += `
-                    <tr class="border-b border-slate-700 hover:bg-slate-750/40">
-                        <td class="p-3 font-medium">${ch.name}</td>
-                        <td class="p-3"><span class="bg-indigo-950/60 text-indigo-300 border border-indigo-900/50 px-2 py-0.5 rounded text-xs">${ch.category}</span></td>
+                    <tr class="border-b border-slate-700 hover:bg-slate-750">
+                        <td class="p-3">${ch.name}</td>
+                        <td class="p-3"><span class="bg-slate-700 px-2 py-1 rounded text-xs">${ch.category}</span></td>
                         <td class="p-3 text-xs text-slate-400 truncate max-w-xs">${ch.url}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="deleteChannel('${ch.id}')" class="bg-red-500/20 text-red-400 hover:bg-red-600 hover:text-white px-2 py-1 rounded text-xs transition cursor-pointer">Kaldır</button>
+                        <td class="p-3">
+                            <button onclick="deleteChannel('${ch.id}')" class="bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Sil</button>
                         </td>
                     </tr>
                 `;
@@ -88,9 +76,9 @@
 
         document.getElementById('channelForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('chName').value.trim();
-            const category = document.getElementById('chCategory').value.trim();
-            const url = document.getElementById('chUrl').value.trim();
+            const name = document.getElementById('chName').value;
+            const category = document.getElementById('chCategory').value;
+            const url = document.getElementById('chUrl').value;
 
             await fetch('/api/admin/channels', {
                 method: 'POST',
@@ -102,7 +90,7 @@
         });
 
         async function deleteChannel(id) {
-            if(confirm('Bu kanalı havuzdan silmek istediğinize emin misiniz?')) {
+            if(confirm('Kanalı silmek istediğinize emin misiniz?')) {
                 await fetch(`/api/admin/channels/${id}`, { method: 'DELETE' });
                 loadChannels();
             }
@@ -110,8 +98,6 @@
 
         async function importM3U() {
             const m3uContent = document.getElementById('m3uContent').value;
-            if(!m3uContent.trim()) return alert('Lütfen M3U metni girin.');
-
             const res = await fetch('/api/admin/import-m3u', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,7 +105,7 @@
             });
             const data = await res.json();
             if(data.success) {
-                alert(`Başarılı! ${data.count} adet yeni kanal listeye eklendi.`);
+                alert(`${data.count} kanal başarıyla sisteme entegre edildi!`);
                 document.getElementById('m3uContent').value = '';
                 loadChannels();
             }
