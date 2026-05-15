@@ -3,97 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunucusuz IPTV Yönetim Paneli</title>
+    <title>Canlı M3U Tabanlı IPTV Paneli</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen p-4 sm:p-8">
 
     <div class="max-w-4xl mx-auto">
-        <!-- 📂 VERİTABANI BAĞLANTI ALANI (İLK ADIM) -->
-        <div id="storageSetup" class="bg-slate-800 p-6 rounded-lg border border-yellow-600/40 mb-6 text-center">
-            <h2 class="text-xl font-bold text-yellow-400 mb-2">📂 Yerel Veritabanı Klasörü Seçin</h2>
-            <p class="text-xs text-slate-400 mb-4">Verilerin kalıcı olarak JSON dosyalarında saklanması için bilgisayarınızdan boş bir klasör seçmeniz gerekir.</p>
-            <button onclick="initLocalStorageFolder()" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-2.5 rounded font-bold transition cursor-pointer">Klasör Seç ve Sistemi Başlat</button>
-            <p id="folderStatus" class="text-xs text-emerald-400 mt-2 hidden">✓ Klasör bağlandı. JSON dosyaları aktif.</p>
+        <!-- 📡 CANLI KAYNAK DURUM ÇUBUĞU -->
+        <div class="bg-slate-800 p-4 rounded-lg border border-indigo-500/30 mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-200">Canlı Veri Havuzu Bağlantısı</h2>
+                    <p class="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">githubusercontent.com/.../merged.m3u</p>
+                </div>
+            </div>
+            <span id="syncStatus" class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800/50 px-3 py-1 rounded-full font-mono">Kanallar Yükleniyor...</span>
         </div>
 
-        <div id="mainApp" class="opacity-30 pointer-events-none transition-opacity duration-300">
+        <div id="mainApp">
             <!-- 🔐 GİRİŞ EKRANI -->
-            <div id="loginSection" class="bg-slate-800 p-8 rounded-lg border border-slate-700 max-w-md mx-auto my-10">
-                <h2 class="text-2xl font-bold text-center text-indigo-400 mb-6">IPTV Portal Giriş</h2>
+            <div id="loginSection" class="bg-slate-800 p-8 rounded-lg border border-slate-700 max-w-md mx-auto my-10 shadow-2xl">
+                <h2 class="text-2xl font-bold text-center text-indigo-400 mb-2">IPTV Portal</h2>
+                <p class="text-center text-xs text-slate-400 mb-6">Kategori Özelleştirme ve M3U Üretici</p>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm mb-1 text-slate-300">Kullanıcı Adı</label>
-                        <input type="text" id="username" class="w-full p-2.5 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" placeholder="admin veya yeni üye adı">
+                        <input type="text" id="username" class="w-full p-2.5 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" placeholder="İstediğiniz bir kullanıcı adı girin">
                     </div>
                     <div>
                         <label class="block text-sm mb-1 text-slate-300">Şifre</label>
                         <input type="password" id="password" class="w-full p-2.5 bg-slate-700 rounded border border-slate-600 focus:outline-none focus:border-indigo-500" placeholder="••••••••">
                     </div>
-                    <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2.5 rounded font-semibold transition cursor-pointer">Giriş Yap / Kayıt Ol</button>
-                </div>
-            </div>
-
-            <!-- 👑 ADMIN PANELİ -->
-            <div id="adminPanel" class="hidden space-y-6">
-                <div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700">
-                    <h1 class="text-xl font-bold text-indigo-400">👑 Yönetici Paneli</h1>
-                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded text-xs font-bold">Çıkış Yap</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700">
-                        <h2 class="text-sm font-bold mb-3 text-emerald-400">Tekil Kanal Ekle</h2>
-                        <div class="space-y-2">
-                            <input type="text" id="chName" placeholder="Kanal Adı" class="w-full p-2 text-xs bg-slate-700 rounded border border-slate-600 focus:outline-none">
-                            <input type="text" id="chCategory" placeholder="Kategori (örn: Spor)" class="w-full p-2 text-xs bg-slate-700 rounded border border-slate-600 focus:outline-none">
-                            <input type="text" id="chUrl" placeholder="Yayın URL (m3u8)" class="w-full p-2 text-xs bg-slate-700 rounded border border-slate-600 focus:outline-none">
-                            <button onclick="addSingleChannel()" class="w-full bg-emerald-600 text-xs py-2 rounded font-bold cursor-pointer">Ekle</button>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 md:col-span-2">
-                        <h2 class="text-sm font-bold mb-2 text-indigo-400">Toplu M3U Yükle</h2>
-                        <textarea id="m3uContent" rows="4" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Belgesel&quot;,Discovery&#10;http://stream.url" class="w-full p-2 bg-slate-700 rounded border border-slate-600 text-xs font-mono focus:outline-none"></textarea>
-                        <button onclick="importM3U()" class="mt-2 w-full bg-indigo-600 text-xs py-2 rounded font-bold cursor-pointer">M3U Çöz ve JSON'a Yaz</button>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800 p-5 rounded-lg border border-slate-700">
-                    <h2 class="text-sm font-bold mb-3 text-slate-300">JSON Veritabanındaki Kanallar</h2>
-                    <div class="overflow-y-auto max-h-60 text-xs">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b border-slate-700 text-slate-400">
-                                    <th class="p-2">Adı</th>
-                                    <th class="p-2">Kategori</th>
-                                    <th class="p-2">URL</th>
-                                    <th class="p-2 text-right">İşlem</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminChannelTable"></tbody>
-                        </table>
-                    </div>
+                    <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2.5 rounded font-semibold transition cursor-pointer">Giriş Yap / Otomatik Üye Ol</button>
                 </div>
             </div>
 
             <!-- 👤 USER PANELİ -->
             <div id="userPanel" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700">
-                    <h1 class="text-xl font-bold text-emerald-400">👤 Üye Paneli: <span id="lblUsername" class="text-white"></span></h1>
-                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded text-xs font-bold">Çıkış Yap</button>
+                    <h1 class="text-lg font-bold text-emerald-400">👤 Üye: <span id="lblUsername" class="text-white font-mono"></span></h1>
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded text-xs font-bold cursor-pointer">Çıkış Yap</button>
                 </div>
 
-                <div class="bg-slate-800 p-6 rounded-lg border border-emerald-500/30">
-                    <h2 class="text-lg font-bold text-emerald-400 mb-2">Özelleştirilmiş M3U Listeniz</h2>
-                    <p class="text-xs text-slate-400 mb-4">Aşağıdaki butona basarak özelleştirilmiş güncel `.m3u` dosyanızı bilgisayarınıza indirebilir ve IPTV oynatıcınıza yükleyebilirsiniz.</p>
-                    <button onclick="downloadUserM3U()" class="bg-emerald-600 hover:bg-emerald-700 px-6 py-2.5 rounded font-bold text-sm cursor-pointer w-full sm:w-auto">👇 M3U Dosyamı İndir (.m3u)</button>
+                <!-- M3U İndirme Kartı -->
+                <div class="bg-slate-800 p-6 rounded-lg border border-emerald-500/30 shadow-lg shadow-emerald-950/20">
+                    <h2 class="text-lg font-bold text-emerald-400 mb-2">Özelleştirilmiş M3U Listeniz Hazır</h2>
+                    <p class="text-xs text-slate-400 mb-4">Aşağıdaki butona basarak, sadece seçtiğiniz kategorileri içeren güncel <b>.m3u</b> dosyanızı indirebilir ve IPTV oynatıcınıza (VLC, Smart TV vb.) yükleyebilirsiniz.</p>
+                    <button onclick="downloadUserM3U()" class="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-lg font-bold text-sm cursor-pointer w-full sm:w-auto shadow-md">👇 Filtrelenmiş M3U Dosyamı İndir (.m3u)</button>
                 </div>
 
+                <!-- Kategori Listesi -->
                 <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                    <h2 class="text-base font-bold mb-2">Görmek İstediğiniz Kategorileri Seçin</h2>
-                    <div id="userCategoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6"></div>
-                    <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded font-bold w-full text-sm cursor-pointer">Kategorileri JSON Dosyasına Kaydet</button>
+                    <h2 class="text-base font-bold mb-1">M3U Listenizde Yer Alacak Kategorileri Seçin</h2>
+                    <p class="text-xs text-slate-400 mb-6">İşaretlemediğiniz kategorilerdeki kanallar listenize dahil edilmez.</p>
+                    <div id="userCategoriesContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 max-h-80 overflow-y-auto pr-2">
+                        <!-- Kategoriler Canlı Linkten Çekilip Buraya Gelecek -->
+                    </div>
+                    <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold w-full text-sm cursor-pointer transition shadow-md">Seçimleri Profilime Kaydet</button>
                 </div>
             </div>
 
@@ -101,237 +71,172 @@
     </div>
 
     <script>
-        let dirHandle = null;
+        const M3U_URL = "https://raw.githubusercontent.com/kadirsener1/tivim/refs/heads/main/merged.m3u";
+        
         let currentUser = null;
         let globalChannels = [];
-        let globalUsers = [];
+        let globalUsers = JSON.parse(localStorage.getItem('iptv_live_users')) || [];
 
         // ==========================================
-        // 📂 DOSYA SİSTEMİ (JSON VERİTABANI YÖNETİMİ)
+        // 📡 CANLI M3U LİNKİNDEN VERİ ÇEKME MANTIĞI
         // ==========================================
-        async function initLocalStorageFolder() {
+        async function fetchLiveM3U() {
             try {
-                // Kullanıcıdan klasör seçmesini iste
-                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                const response = await fetch(M3U_URL);
+                if (!response.ok) throw new Error('M3U dosyası indirilemedi');
+                const m3uText = await response.text();
                 
-                // Dosyaları oku veya yoksa boş oluştur
-                globalChannels = await readJSONFile('channels.json');
-                globalUsers = await readJSONFile('users.json');
-
-                document.getElementById('storageSetup').classList.add('bg-emerald-950/40', 'border-emerald-600/40');
-                document.getElementById('storageSetup').classList.remove('border-yellow-600/40');
-                document.getElementById('folderStatus').classList.remove('hidden');
-                document.getElementById('mainApp').classList.remove('opacity-30', 'pointer-events-none');
-            } catch (err) {
-                alert('Klasör erişim izni verilmedi veya bir hata oluştu!');
-                console.error(err);
+                parseM3U(m3uText);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('syncStatus').innerText = "Bağlantı Hatası!";
+                document.getElementById('syncStatus').classList.replace('text-indigo-300', 'text-red-400');
+                alert("Canlı M3U linkinden kanallar çekilemedi! İnternet bağlantınızı veya linki kontrol edin.");
             }
         }
 
-        async function readJSONFile(fileName) {
-            try {
-                const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-                const file = await fileHandle.getFile();
-                const text = await file.text();
-                return text ? JSON.parse(text) : [];
-            } catch (e) {
-                return [];
-            }
-        }
+        function parseM3U(m3uContent) {
+            const lines = m3uContent.split('\n');
+            globalChannels = [];
+            let currentInfo = null;
 
-        async function writeJSONFile(fileName, data) {
-            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(data, null, 2));
-            await writable.close();
-        }
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('#EXTINF:')) {
+                    const nameMatch = line.match(/,(.+)$/);
+                    const groupMatch = line.match(/group-title="([^"]+)"/);
+                    currentInfo = {
+                        name: nameMatch ? nameMatch[1].trim() : 'Canlı Yayın',
+                        category: groupMatch ? groupMatch[1].trim() : 'Genel'
+                    };
+                } else if (line.startsWith('http') && currentInfo) {
+                    globalChannels.push({
+                        name: currentInfo.name,
+                        category: currentInfo.category,
+                        url: line
+                    });
+                    currentInfo = null;
+                }
+            });
 
-        // ==========================================
-        // 🔐 GİRİŞ & KAYIT MANTIĞI
-        // ==========================================
-        async function handleLogin() {
-            const userInp = document.getElementById('username').value.trim();
-            const passInp = document.getElementById('password').value;
-
-            if(!userInp || !passInp) return alert('Lütfen alanları doldurun.');
-
-            if(userInp === 'admin' && passInp === 'admin123') {
-                currentUser = { username: 'admin', role: 'admin' };
-                showPanel('admin');
-                return;
-            }
-
-            // Normal Kullanıcı Kontrolü
-            let user = globalUsers.find(u => u.username === userInp);
-            if(!user) {
-                // Yoksa Otomatik JSON'a Kaydet (Kayıt işlemi)
-                user = { username: userInp, password: passInp, allowedCategories: [] };
-                globalUsers.push(user);
-                await writeJSONFile('users.json', globalUsers);
-                alert('Yeni üyelik oluşturuldu ve JSON dosyasına kaydedildi!');
-            } else if(user.password !== passInp) {
-                return alert('Hatalı şifre!');
-            }
-
-            currentUser = user;
-            showPanel('user');
-        }
-
-        function showPanel(role) {
-            document.getElementById('loginSection').classList.add('hidden');
-            if(role === 'admin') {
-                document.getElementById('adminPanel').classList.remove('hidden');
-                renderAdminChannels();
-            } else {
-                document.getElementById('userPanel').classList.remove('hidden');
-                document.getElementById('lblUsername').innerText = currentUser.username;
+            // Durum çubuğunu güncelle
+            const totalChannels = globalChannels.length;
+            const uniqueCategories = [...new Set(globalChannels.map(c => c.category))].length;
+            
+            document.getElementById('syncStatus').innerText = `${totalChannels} Kanal / ${uniqueCategories} Kategori Aktif`;
+            document.getElementById('syncStatus').classList.replace('text-indigo-300', 'text-emerald-400');
+            
+            // Eğer bir kullanıcı giriş yapmış durumdaysa listeyi yenile
+            if (currentUser) {
                 renderUserCategories();
             }
         }
 
+        // ==========================================
+        // 🔐 GİRİŞ & OTOMATİK ÜYELİK KAYDI
+        // ==========================================
+        function handleLogin() {
+            const userInp = document.getElementById('username').value.trim();
+            const passInp = document.getElementById('password').value;
+
+            if (!userInp || !passInp) return alert('Lütfen kullanıcı adı ve şifre alanlarını doldurun.');
+
+            // Tarayıcı hafızasından kullanıcı kontrolü
+            let user = globalUsers.find(u => u.username === userInp);
+            
+            if (!user) {
+                // Yoksa anında yeni kayıt oluşturur
+                user = { username: userInp, password: passInp, allowedCategories: [] };
+                globalUsers.push(user);
+                localStorage.setItem('iptv_live_users', JSON.stringify(globalUsers));
+                alert('Tebrikler! Hesabınız başarıyla oluşturuldu ve sisteme giriş yapıldı.');
+            } else if (user.password !== passInp) {
+                return alert('Hatalı şifre girdiniz!');
+            }
+
+            currentUser = user;
+            showUserPanel();
+        }
+
+        function showUserPanel() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('userPanel').classList.remove('hidden');
+            document.getElementById('lblUsername').innerText = currentUser.username;
+            renderUserCategories();
+        }
+
         function logout() {
             currentUser = null;
-            document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('userPanel').classList.add('hidden');
             document.getElementById('loginSection').classList.remove('hidden');
         }
 
         // ==========================================
-        // 👑 ADMIN İŞLEMLERİ
-        // ==========================================
-        async function addSingleChannel() {
-            const name = document.getElementById('chName').value.trim();
-            const category = document.getElementById('chCategory').value.trim();
-            const url = document.getElementById('chUrl').value.trim();
-
-            if(!name || !category || !url) return alert('Tüm alanları doldurun.');
-
-            globalChannels.push({ id: Date.now().toString(), name, category, url });
-            await writeJSONFile('channels.json', globalChannels);
-            
-            // Temizle ve yenile
-            document.getElementById('chName').value = '';
-            document.getElementById('chCategory').value = '';
-            document.getElementById('chUrl').value = '';
-            renderAdminChannels();
-        }
-
-        async function importM3U() {
-            const m3u = document.getElementById('m3uContent').value;
-            if(!m3u.trim()) return alert('Metin alanı boş.');
-
-            const lines = m3u.split('\n');
-            let currentInfo = null;
-            let count = 0;
-
-            lines.forEach(line => {
-                line = line.trim();
-                if(line.startsWith('#EXTINF:')) {
-                    const nameMatch = line.match(/,(.+)$/);
-                    const groupMatch = line.match(/group-title="([^"]+)"/);
-                    currentInfo = {
-                        name: nameMatch ? nameMatch[1].trim() : 'Kanal',
-                        category: groupMatch ? groupMatch[1].trim() : 'Genel'
-                    };
-                } else if(line.startsWith('http') && currentInfo) {
-                    globalChannels.push({
-                        id: Math.random().toString(36).substring(2, 7) + Date.now(),
-                        name: currentInfo.name,
-                        category: currentInfo.category,
-                        url: line
-                    });
-                    count++;
-                    currentInfo = null;
-                }
-            });
-
-            await writeJSONFile('channels.json', globalChannels);
-            document.getElementById('m3uContent').value = '';
-            alert(`${count} kanal başarıyla çözüldü ve channels.json dosyasına yazıldı.`);
-            renderAdminChannels();
-        }
-
-        async function deleteChannel(id) {
-            globalChannels = globalChannels.filter(c => c.id !== id);
-            await writeJSONFile('channels.json', globalChannels);
-            renderAdminChannels();
-        }
-
-        function renderAdminChannels() {
-            const tbody = document.getElementById('adminChannelTable');
-            tbody.innerHTML = '';
-            globalChannels.slice().reverse().forEach(ch => {
-                tbody.innerHTML += `
-                    <tr class="border-b border-slate-700/50">
-                        <td class="p-2 font-semibold">${ch.name}</td>
-                        <td class="p-2"><span class="bg-indigo-950 px-2 py-0.5 rounded text-indigo-300 text-[10px]">${ch.category}</span></td>
-                        <td class="p-2 text-slate-400 truncate max-w-xs">${ch.url}</td>
-                        <td class="p-2 text-right">
-                            <button onclick="deleteChannel('${ch.id}')" class="text-red-400 hover:text-red-600 font-bold cursor-pointer">Sil</button>
-                        </td>
-                    </tr>`;
-            });
-        }
-
-        // ==========================================
-        // 👤 KULLANICI İŞLEMLERİ
+        // 👤 KATEGORİ VE LİSTE YÖNETİMİ
         // ==========================================
         function renderUserCategories() {
-            const allCategories = [...new Set(globalChannels.map(c => c.category))];
+            const allCategories = [...new Set(globalChannels.map(c => c.category))].sort();
             const container = document.getElementById('userCategoriesContainer');
             container.innerHTML = '';
 
-            if(allCategories.length === 0) {
-                container.innerHTML = '<p class="text-slate-500 text-xs col-span-3">Sistemde henüz kanal kategorisi yok.</p>';
+            if (allCategories.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-xs col-span-3 text-center py-4">Canlı M3U listesinden kategoriler yükleniyor, lütfen bekleyin...</p>';
                 return;
             }
 
             allCategories.forEach(cat => {
                 const isChecked = currentUser.allowedCategories.includes(cat) ? 'checked' : '';
                 container.innerHTML += `
-                    <label class="flex items-center space-x-3 bg-slate-750 p-3 rounded border border-slate-700 cursor-pointer select-none">
-                        <input type="checkbox" value="${cat}" ${isChecked} class="w-4 h-4 accent-indigo-500">
-                        <span class="text-xs font-semibold">${cat}</span>
+                    <label class="flex items-center space-x-3 bg-slate-750 p-3 rounded border border-slate-700/60 cursor-pointer select-none hover:bg-slate-700 transition">
+                        <input type="checkbox" value="${cat}" ${isChecked} class="w-4 h-4 accent-indigo-500 rounded">
+                        <span class="text-xs font-semibold text-slate-200 truncate">${cat}</span>
                     </label>`;
             });
         }
 
-        async function saveUserCategories() {
+        function saveUserCategories() {
             const checkboxes = document.querySelectorAll('#userCategoriesContainer input[type="checkbox"]:checked');
             const selected = Array.from(checkboxes).map(cb => cb.value);
 
-            // Hafızadaki kullanıcıyı ve genel listeyi güncelle
             currentUser.allowedCategories = selected;
+            
+            // Genel kullanıcılar listesindeki veriyi güncelle ve localStorage'a kaydet
             const uIndex = globalUsers.findIndex(u => u.username === currentUser.username);
-            if(uIndex !== -1) {
+            if (uIndex !== -1) {
                 globalUsers[uIndex].allowedCategories = selected;
-                await writeJSONFile('users.json', globalUsers);
-                alert('Tercihleriniz users.json dosyasına başarıyla kaydedildi!');
+                localStorage.setItem('iptv_live_users', JSON.stringify(globalUsers));
+                alert('Tercih ettiğiniz kategoriler profilinize başarıyla kaydedildi!');
             }
         }
 
-        // M3U Çıktısını Dinamik Üret ve İndir
+        // ==========================================
+        // 📥 KULLANICIYA ÖZEL M3U DOSYASI ÜRETME
+        // ==========================================
         function downloadUserM3U() {
-            let m3uText = '#EXTM3U\n';
+            if (!currentUser.allowedCategories || currentUser.allowedCategories.length === 0) {
+                return alert('Lütfen önce listenize eklemek için en az 1 kategori seçin ve kaydedin!');
+            }
+
+            let m3uOutputText = '#EXTM3U\n';
             let addedCount = 0;
 
             globalChannels.forEach(ch => {
-                if(currentUser.allowedCategories.includes(ch.category)) {
-                    m3uText += `#EXTINF:-1 group-title="${ch.category}",${ch.name}\n${ch.url}\n`;
+                if (currentUser.allowedCategories.includes(ch.category)) {
+                    m3uOutputText += `#EXTINF:-1 group-title="${ch.category}",${ch.name}\n${ch.url}\n`;
                     addedCount++;
                 }
             });
 
-            if(addedCount === 0) {
-                return alert('Lütfen önce listenize eklemek için en az 1 kategori seçip kaydedin!');
-            }
-
-            const blob = new Blob([m3uText], { type: 'audio/x-mpegurl' });
+            // Dosyayı oluştur ve tarayıcı aracılığıyla indir
+            const blob = new Blob([m3uOutputText], { type: 'audio/x-mpegurl' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `${currentUser.username}_iptv_listesi.m3u`;
+            link.download = `${currentUser.username}_ozel_liste.m3u`;
             link.click();
         }
+
+        // Sayfa ilk yüklendiğinde otomatik olarak Github linkine bağlan
+        fetchLiveM3U();
     </script>
 </body>
 </html>
