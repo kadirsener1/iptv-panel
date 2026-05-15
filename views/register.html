@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Panel - Kayıt</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">📺</div>
+      <h1>Kayıt Ol</h1>
+      <p class="subtitle">Yeni hesap oluşturun ve playlist'lerinizi yönetin</p>
+      
+      <div id="regMsg" class="hidden" style="padding:10px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center;"></div>
+      
+      <form id="registerForm">
+        <div class="form-group">
+          <label>👤 Kullanıcı Adı</label>
+          <input type="text" id="username" placeholder="En az 3 karakter" required minlength="3">
+        </div>
+        <div class="form-group">
+          <label>📧 Email</label>
+          <input type="email" id="email" placeholder="ornek@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>🔒 Şifre</label>
+          <input type="password" id="password" placeholder="En az 6 karakter" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>🔒 Şifre Tekrar</label>
+          <input type="password" id="password2" placeholder="Şifrenizi tekrar girin" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-full">
+          ✨ Kayıt Ol
+        </button>
+      </form>
+      
+      <div class="text-center mt-4">
+        <a href="/" class="link-text">← Giriş sayfasına dön</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msgDiv = document.getElementById('regMsg');
+      msgDiv.classList.add('hidden');
+      
+      const password = document.getElementById('password').value;
+      const password2 = document.getElementById('password2').value;
+      
+      if (password !== password2) {
+        msgDiv.style.background = 'rgba(239,68,68,0.1)';
+        msgDiv.style.border = '1px solid var(--danger)';
+        msgDiv.style.color = 'var(--danger)';
+        msgDiv.textContent = 'Şifreler eşleşmiyor!';
+        msgDiv.classList.remove('hidden');
+        return;
+      }
+      
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = '⏳ Kayıt yapılıyor...';
+      
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            password
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          msgDiv.style.background = 'rgba(34,197,94,0.1)';
+          msgDiv.style.border = '1px solid var(--success)';
+          msgDiv.style.color = 'var(--success)';
+          msgDiv.textContent = data.message + ' Yönlendiriliyorsunuz...';
+          msgDiv.classList.remove('hidden');
+          setTimeout(() => window.location.href = '/', 2000);
+        } else {
+          msgDiv.style.background = 'rgba(239,68,68,0.1)';
+          msgDiv.style.border = '1px solid var(--danger)';
+          msgDiv.style.color = 'var(--danger)';
+          msgDiv.textContent = data.error;
+          msgDiv.classList.remove('hidden');
+        }
+      } catch (err) {
+        msgDiv.style.background = 'rgba(239,68,68,0.1)';
+        msgDiv.style.border = '1px solid var(--danger)';
+        msgDiv.style.color = 'var(--danger)';
+        msgDiv.textContent = 'Bağlantı hatası!';
+        msgDiv.classList.remove('hidden');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '✨ Kayıt Ol';
+    });
+  </script>
+</body>
+</html>
