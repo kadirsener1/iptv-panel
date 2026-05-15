@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>IPTV Kullanıcı Paneli</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-400">Hoş Geldiniz, <span id="usernameLabel" class="text-white"></span></h1>
+            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Çıkış Yap</button>
+        </div>
+
+        <!-- M3U Link Alanı -->
+        <div class="bg-slate-800 p-6 rounded-lg mb-8 border border-indigo-500/30">
+            <h2 class="text-xl font-bold mb-2 text-indigo-400">Size Özel M3U Oynatma Listesi Linki</h2>
+            <p class="text-sm text-slate-400 mb-4">Aşağıdaki linki kopyalayıp Smart TV, VLC Player, GSE IPTV veya PotPlayer gibi programlara doğrudan yapıştırabilirsiniz.</p>
+            <div class="flex gap-2">
+                <input type="text" id="m3uUrlInput" readonly class="w-full p-3 bg-slate-900 rounded border border-slate-700 text-emerald-400 font-mono text-sm focus:outline-none">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('m3uUrlInput').value); alert('Link Kopyalandı!')" class="bg-emerald-600 hover:bg-emerald-700 px-6 rounded font-semibold">Kopyala</button>
+            </div>
+        </div>
+
+        <!-- Kategori Seçim Listesi -->
+        <div class="bg-slate-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-2">Listenizde Listelenmesini İstediğiniz Kategorileri Seçin</h2>
+            <p class="text-sm text-slate-400 mb-6">Sadece işaretlediğiniz kategorilerdeki kanallar M3U dosyanızda görünecektir.</p>
+            
+            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                <!-- Dinamik Kategoriler Buraya Gelecek -->
+            </div>
+
+            <button onclick="saveUserCategories()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold w-full transition">Seçilen Kategorileri Güncelle ve Kaydet</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+        if(!token) window.location.href = '/login.html';
+        document.getElementById('usernameLabel').innerText = username;
+
+        async function initUserPanel() {
+            // 1. Tüm kanallardan benzersiz kategorileri çek
+            const chRes = await fetch('/api/admin/channels');
+            const channels = await chRes.json();
+            const allCategories = [...new Set(channels.map(c => c.category))];
+
+            // 2. Kullanıcı verilerini çek (Önceki seçtikleri)
+            const userRes = await fetch(`/api/user/info?token=${token}`);
+            const userData = await userRes.json();
+
+            document.getElementById('m3uUrlInput').value = userData.playlistUrl;
+
+            // 3. Kategorileri Arayüze Bas
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+            
+            if(allCategories.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 col-span-3">Henüz sistemde kategori bulunmuyor. Adminin kanal yüklemesi gerekir.</p>';
+                return;
+            }
+
+            allCategories.forEach(cat => {
+                const isChecked = userData.allowedCategories.includes(cat) ? 'checked' : '';
+                container.innerHTML += `
+                    <label class="flex items-center space-x-3 bg-slate-700/50 p-3 rounded-lg cursor-pointer hover:bg-slate-700 transition">
+                        <input type="checkbox" value="${cat}" ${isChecked} class="w-5 h-5 accent-indigo-500 rounded">
+                        <span class="text-sm font-medium">${cat}</span>
+                    </label>
+                `;
+            });
+        }
+
+        async function saveUserCategories() {
+            const checkboxes = document.querySelectorAll('#categoriesContainer input[type="checkbox"]:checked');
+            const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
+
+            const res = await fetch('/api/user/save-categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, categories: selectedCategories })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('Oynatma listeniz başarıyla güncellendi!');
+                initUserPanel();
+            }
+        }
+
+        initUserPanel();
+    </script>
+</body>
+</html>
