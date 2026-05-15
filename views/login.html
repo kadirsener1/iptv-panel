@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Panel - Giriş</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">📺</div>
+      <h1>IPTV Panel</h1>
+      <p class="subtitle">Yönetim paneline giriş yapın</p>
+      
+      <div id="loginError" class="hidden" style="background:rgba(239,68,68,0.1);border:1px solid var(--danger);color:var(--danger);padding:10px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center;"></div>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <label>👤 Kullanıcı Adı</label>
+          <input type="text" id="username" placeholder="Kullanıcı adınız" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>🔒 Şifre</label>
+          <input type="password" id="password" placeholder="Şifreniz" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-full">
+          🚀 Giriş Yap
+        </button>
+      </form>
+      
+      <div class="text-center mt-4">
+        <a href="/register" class="link-text">Hesabınız yok mu? Kayıt olun →</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Token varsa yönlendir
+    const token = document.cookie.split(';').find(c => c.trim().startsWith('token='));
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + token.split('=')[1] }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          window.location.href = data.user.role === 'admin' ? '/admin' : '/dashboard';
+        }
+      }).catch(() => {});
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorDiv = document.getElementById('loginError');
+      errorDiv.classList.add('hidden');
+      
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = '⏳ Giriş yapılıyor...';
+      
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          window.location.href = data.user.role === 'admin' ? '/admin' : '/dashboard';
+        } else {
+          errorDiv.textContent = data.error;
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Bağlantı hatası!';
+        errorDiv.classList.remove('hidden');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🚀 Giriş Yap';
+    });
+  </script>
+</body>
+</html>
