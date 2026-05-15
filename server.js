@@ -1,306 +1,722 @@
+require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key';
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-// --- GARANTİLİ DOSYA YOLU KONTROLÜ ---
-let DATA_DIR = path.join(__dirname, 'data');
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(express.static('public'));
 
-// Eğer Render diski aktifse ve tanımlıysa onu kullan, hata verirse yerel klasöre dön
-if (process.env.DISK_PATH) {
-    try {
-        if (!fs.existsSync(process.env.DISK_PATH)) {
-            fs.mkdirSync(process.env.DISK_PATH, { recursive: true });
-        }
-        DATA_DIR = process.env.DISK_PATH;
-    } catch (e) {
-        console.log("Render disk yoluna erişilemedi, yerel klasör kullanılacak.");
-    }
-}
-
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
-
-if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]', 'utf8');
-if (!fs.existsSync(CHANNELS_FILE)) fs.writeFileSync(CHANNELS_FILE, '[]', 'utf8');
-
-const readData = (file) => {
-    try {
-        const content = fs.readFileSync(file, 'utf8');
-        return JSON.parse(content || '[]');
-    } catch (e) {
-        return [];
-    }
-};
-
-const writeData = (file, data) => {
-    try {
-        fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {
-        console.error("Dosya yazma hatası:", e);
-    }
-};
-// ... Kodun geri kalanı aynı kalacak
-
-const writeData = (file, data) => {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-};
-
-// --- MIDDLEWARES (ARA YAZILIMLAR) ---
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Güvenli oturum yönetimi
-app.use(session({
-    secret: 'iptv-panel-guvenli-anahtar-2026',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-        maxAge: 1000 * 60 * 60 * 24, // 1 Gün aktif kalır
-        secure: false // Render HTTPs yönlendirmesini kendisi yaptığı için false kalabilir
-    }
-}));
-
-// Giriş kontrolü gerektiren rotalar için koruma
-const authRequired = (req, res, next) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Lütfen önce giriş yapın.' });
-    }
-    next();
-};
-
-// Sadece adminlerin girebileceği rotalar için koruma
-const adminRequired = (req, res, next) => {
-    if (!req.session.user || !req.session.user.isAdmin) {
-        return res.status(403).json({ error: 'Bu işlem için yetkiniz yok. Admin olmalısınız.' });
-    }
-    next();
-};
-
-// --- KULLANICI YÖNETİMİ API'LERİ ---
-
-// Kayıt Olma Rotası (Sistemdeki İLK kayıt otomatik ADMIN olur)
-app.post('/api/register', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        if (!username || !password) return res.status(400).json({ error: 'Kullanıcı adı ve şifre boş bırakılamaz.' });
-
-        const users = readData(USERS_FILE);
-        
-        // Kullanıcı adı kontrolü
-        if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-            return res.status(400).json({ error: 'Bu kullanıcı adı zaten sistemde mevcut.' });
-        }
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Eğer veritabanında hiç kullanıcı yoksa bu ilk kişidir ve otomatik admin yapılır
-        const isFirstUser = users.length === 0;
-
-        const newUser = {
-            id: uuidv4(),
-            username: username.trim(),
-            password: hashedPassword,
-            isAdmin: isFirstUser, 
-            allowedCategories: [],
-            token: uuidv4().substring(0, 8) // M3U linki için benzersiz kısa token
-        };
-        
-        users.push(newUser);
-        writeData(USERS_FILE, users);
-        
-        res.json({ 
-            success: true, 
-            message: isFirstUser ? 'İlk kullanıcı (Admin) başarıyla oluşturuldu.' : 'Kullanıcı kaydı başarıyla tamamlandı.' 
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Kayıt sırasında sistemsel bir hata oluştu.' });
-    }
-});
-
-// Giriş Yapma Rotası
-app.post('/api/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const users = readData(USERS_FILE);
-        
-        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-        
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(400).json({ error: 'Hatalı kullanıcı adı veya şifre girdiniz.' });
-        }
-        
-        // Oturum verilerini kaydetme
-        req.session.user = { 
-            id: user.id, 
-            username: user.username, 
-            isAdmin: user.isAdmin, 
-            token: user.token 
-        };
-        
-        res.json({ success: true, isAdmin: user.isAdmin });
-    } catch (error) {
-        res.status(500).json({ error: 'Giriş işlemi sırasında hata oluştu.' });
-    }
-});
-
-// Çıkış Yapma Rotası
-app.get('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
-});
-
-// Oturum Açmış Mevcut Kullanıcı Bilgisini Döndürür
-app.get('/api/me', authRequired, (req, res) => {
-    res.json(req.session.user);
-});
-
-// --- ADMIN KANAL YÖNETİMİ API'LERİ ---
-
-// Tüm Kanalları Listele (Sadece Admin)
-app.get('/api/admin/channels', adminRequired, (req, res) => {
-    res.json(readData(CHANNELS_FILE));
-});
-
-// Manuel Tekil Kanal Ekle (Sadece Admin)
-app.post('/api/admin/channels', adminRequired, (req, res) => {
-    const { name, url, category } = req.body;
-    if (!name || !url) return res.status(400).json({ error: 'Kanal adı ve URL girmek zorunludur.' });
-
-    const channels = readData(CHANNELS_FILE);
-    const newChannel = { 
-        id: uuidv4(), 
-        name: name.trim(), 
-        url: url.trim(), 
-        category: category ? category.trim() : 'Genel' 
-    };
-    
-    channels.push(newChannel);
-    writeData(CHANNELS_FILE, channels);
-    res.json({ success: true, channel: newChannel });
-});
-
-// Kanal Sil (Sadece Admin)
-app.delete('/api/admin/channels/:id', adminRequired, (req, res) => {
-    let channels = readData(CHANNELS_FILE);
-    const initialLength = channels.length;
-    channels = channels.filter(c => c.id !== req.params.id);
-    
-    if (channels.length === initialLength) return res.status(404).json({ error: 'Kanal bulunamadı.' });
-
-    writeData(CHANNELS_FILE, channels);
-    res.json({ success: true });
-});
-
-// Toplu M3U Metni Import Etme (Sadece Admin)
-app.post('/api/admin/import-m3u', adminRequired, (req, res) => {
-    const { m3uContent } = req.body;
-    if (!m3uContent || m3uContent.trim() === "") return res.status(400).json({ error: 'M3U içeriği boş olamaz.' });
-
-    const channels = readData(CHANNELS_FILE);
-    const lines = m3uContent.split('\n');
-    let currentChannel = {};
-    let importCount = 0;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (line.startsWith('#EXTINF:')) {
-            // group-title parametresini yakala (Kategori belirlemek için)
-            const groupMatch = line.match(/group-title="([^"]+)"/);
-            currentChannel.category = groupMatch ? groupMatch[1].trim() : 'M3U Import';
-            
-            // Virgülden sonraki kanal ismini yakala
-            const nameParts = line.split(',');
-            currentChannel.name = nameParts[nameParts.length - 1].trim();
-        } else if (line.startsWith('http')) {
-            currentChannel.url = line;
-            currentChannel.id = uuidv4();
-            
-            if (currentChannel.name && currentChannel.url) {
-                channels.push({ ...currentChannel });
-                importCount++;
-            }
-            currentChannel = {}; // Bir sonraki kanal için objeyi sıfırla
-        }
-    });
-
-    writeData(CHANNELS_FILE, channels);
-    res.json({ success: true, count: importCount });
-});
-
-// --- NORMAL ÜYE / KULLANICI PANEL API'LERİ ---
-
-// Sistemdeki tüm eşsiz kategorileri çek (Kullanıcının kutucukları seçmesi için)
-app.get('/api/user/categories', authRequired, (req, res) => {
-    const channels = readData(CHANNELS_FILE);
-    const categories = [...new Set(channels.map(c => c.category))];
-    res.json(categories);
-});
-
-// Kullanıcının seçtiği ve izin verdiği kategorileri kaydet
-app.post('/api/user/my-categories', authRequired, (req, res) => {
-    const { categories } = req.body; // Gönderilen array veri formatı: ["Spor", "Sinema"]
-    if (!Array.isArray(categories)) return res.status(400).json({ error: 'Geçersiz veri formatı.' });
-
-    const users = readData(USERS_FILE);
-    const userIndex = users.findIndex(u => u.id === req.session.user.id);
-    
-    if (userIndex !== -1) {
-        users[userIndex].allowedCategories = categories;
-        writeData(USERS_FILE, users);
-        res.json({ success: true });
+// Multer config for M3U upload
+const upload = multer({ 
+  dest: 'uploads/',
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.match(/\.(m3u|m3u8|txt)$/)) {
+      cb(null, true);
     } else {
-        res.status(404).json({ error: 'Kullanıcı kaydı bulunamadı.' });
+      cb(new Error('Sadece M3U/M3U8/TXT dosyaları yüklenebilir!'));
     }
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
-// Kullanıcının hali hazırda seçmiş olduğu kategorileri yükle
-app.get('/api/user/my-categories', authRequired, (req, res) => {
-    const users = readData(USERS_FILE);
-    const user = users.find(u => u.id === req.session.user.id);
-    res.json(user ? user.allowedCategories : []);
-});
+// ==================== DATABASE ====================
+const DB_PATH = path.join(__dirname, 'data', 'database.json');
 
-// --- CANLI ÇIKTI: IPTV PROGRAMLARI İÇİN M3U BAĞLANTISI ---
-// Bu rota şifresiz ve herkese açıktır, doğrulamayı token parametresi üzerinden yapar.
-app.get('/get-m3u/:token', (req, res) => {
-    const { token } = req.params;
-    const users = readData(USERS_FILE);
-    const user = users.find(u => u.token === token);
-    
-    if (!user) {
-        return res.status(404).send('#EXTM3U\n#EXTINF:-1, Gecersiz veya iptal edilmis M3U linki.');
-    }
-
-    const channels = readData(CHANNELS_FILE);
-    
-    // Sadece kullanıcının izin verdiği/seçtiği kategorilerdeki kanalları filtrele
-    const userChannels = channels.filter(c => user.allowedCategories.includes(c.category));
-
-    let m3uResponse = '#EXTM3U\n';
-    userChannels.forEach(c => {
-        m3uResponse += `#EXTINF:-1 group-title="${c.category}",${c.name}\n${c.url}\n`;
+function ensureDataDir() {
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(DB_PATH)) {
+    const initialData = {
+      channels: [],
+      categories: [
+        "Genel", "Spor", "Haber", "Sinema", "Dizi", 
+        "Müzik", "Çocuk", "Belgesel", "Eğlence", "Ulusal"
+      ],
+      users: [],
+      playlists: [],
+      settings: {
+        siteName: "IPTV Panel",
+        maxChannelsPerPlaylist: 500
+      }
+    };
+    // Admin kullanıcısını oluştur
+    const adminHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10);
+    initialData.users.push({
+      id: uuidv4(),
+      username: process.env.ADMIN_USERNAME || 'admin',
+      email: 'admin@iptv.com',
+      password: adminHash,
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+      isActive: true
     });
+    fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2));
+  }
+}
 
-    // Tarayıcıya ve IPTV oynatıcılara bunun bir M3U dosyası olduğunu bildiren başlıklar
-    res.setHeader('Content-Type', 'audio/x-mpegurl');
-    res.setHeader('Content-Disposition', 'attachment; filename="iptv_playlist.m3u"');
-    res.send(m3uResponse);
+function readDB() {
+  ensureDataDir();
+  const raw = fs.readFileSync(DB_PATH, 'utf-8');
+  return JSON.parse(raw);
+}
+
+function writeDB(data) {
+  ensureDataDir();
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+}
+
+// ==================== AUTH MIDDLEWARE ====================
+function authenticateToken(req, res, next) {
+  const token = req.cookies.token || req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Giriş yapmanız gerekiyor' });
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Geçersiz veya süresi dolmuş token' });
+  }
+}
+
+function requireAdmin(req, res, next) {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin yetkisi gerekiyor' });
+  }
+  next();
+}
+
+// ==================== PAGE ROUTES ====================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
-// Sunucuyu ayağa kaldır
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'register.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'user-dashboard.html'));
+});
+
+// ==================== AUTH ROUTES ====================
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  const db = readDB();
+  
+  const user = db.users.find(u => u.username === username);
+  if (!user) return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
+  if (!user.isActive) return res.status(403).json({ error: 'Hesabınız devre dışı' });
+  
+  const valid = bcrypt.compareSync(password, user.password);
+  if (!valid) return res.status(401).json({ error: 'Şifre hatalı' });
+  
+  const token = jwt.sign(
+    { id: user.id, username: user.username, role: user.role, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  
+  res.cookie('token', token, { httpOnly: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.json({ 
+    success: true, 
+    token, 
+    user: { id: user.id, username: user.username, role: user.role, email: user.email }
+  });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, email, password } = req.body;
+  
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Tüm alanlar zorunlu' });
+  }
+  if (username.length < 3) return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalı' });
+  if (password.length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+  
+  const db = readDB();
+  
+  if (db.users.find(u => u.username === username)) {
+    return res.status(400).json({ error: 'Bu kullanıcı adı zaten alınmış' });
+  }
+  if (db.users.find(u => u.email === email)) {
+    return res.status(400).json({ error: 'Bu email zaten kayıtlı' });
+  }
+  
+  const hash = bcrypt.hashSync(password, 10);
+  const newUser = {
+    id: uuidv4(),
+    username,
+    email,
+    password: hash,
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    isActive: true
+  };
+  
+  db.users.push(newUser);
+  writeDB(db);
+  
+  res.json({ success: true, message: 'Kayıt başarılı! Giriş yapabilirsiniz.' });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ success: true });
+});
+
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// ==================== ADMIN: CHANNEL ROUTES ====================
+app.get('/api/channels', authenticateToken, (req, res) => {
+  const db = readDB();
+  const { search, category, page = 1, limit = 50 } = req.query;
+  
+  let channels = [...db.channels];
+  
+  if (search) {
+    const s = search.toLowerCase();
+    channels = channels.filter(c => 
+      c.name.toLowerCase().includes(s) || 
+      (c.group && c.group.toLowerCase().includes(s))
+    );
+  }
+  if (category && category !== 'all') {
+    channels = channels.filter(c => c.group === category);
+  }
+  
+  const total = channels.length;
+  const start = (page - 1) * limit;
+  const paged = channels.slice(start, start + parseInt(limit));
+  
+  res.json({ 
+    channels: paged, 
+    total, 
+    page: parseInt(page), 
+    totalPages: Math.ceil(total / limit) 
+  });
+});
+
+app.post('/api/channels', authenticateToken, requireAdmin, (req, res) => {
+  const { name, url, logo, group, epgId } = req.body;
+  
+  if (!name || !url) {
+    return res.status(400).json({ error: 'Kanal adı ve URL zorunlu' });
+  }
+  
+  const db = readDB();
+  const channel = {
+    id: uuidv4(),
+    name: name.trim(),
+    url: url.trim(),
+    logo: logo?.trim() || '',
+    group: group?.trim() || 'Genel',
+    epgId: epgId?.trim() || '',
+    isActive: true,
+    addedBy: req.user.username,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  db.channels.push(channel);
+  
+  // Kategori yoksa ekle
+  if (channel.group && !db.categories.includes(channel.group)) {
+    db.categories.push(channel.group);
+  }
+  
+  writeDB(db);
+  res.json({ success: true, channel });
+});
+
+app.put('/api/channels/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const { name, url, logo, group, epgId, isActive } = req.body;
+  
+  const db = readDB();
+  const idx = db.channels.findIndex(c => c.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Kanal bulunamadı' });
+  
+  if (name) db.channels[idx].name = name.trim();
+  if (url) db.channels[idx].url = url.trim();
+  if (logo !== undefined) db.channels[idx].logo = logo.trim();
+  if (group) {
+    db.channels[idx].group = group.trim();
+    if (!db.categories.includes(group.trim())) {
+      db.categories.push(group.trim());
+    }
+  }
+  if (epgId !== undefined) db.channels[idx].epgId = epgId.trim();
+  if (isActive !== undefined) db.channels[idx].isActive = isActive;
+  db.channels[idx].updatedAt = new Date().toISOString();
+  
+  writeDB(db);
+  res.json({ success: true, channel: db.channels[idx] });
+});
+
+app.delete('/api/channels/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  
+  const idx = db.channels.findIndex(c => c.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Kanal bulunamadı' });
+  
+  db.channels.splice(idx, 1);
+  
+  // Playlist'lerden de kaldır
+  db.playlists.forEach(p => {
+    p.channelIds = p.channelIds.filter(cid => cid !== id);
+  });
+  
+  writeDB(db);
+  res.json({ success: true });
+});
+
+app.delete('/api/channels', authenticateToken, requireAdmin, (req, res) => {
+  const { ids } = req.body;
+  const db = readDB();
+  
+  if (ids && ids.length > 0) {
+    db.channels = db.channels.filter(c => !ids.includes(c.id));
+    db.playlists.forEach(p => {
+      p.channelIds = p.channelIds.filter(cid => !ids.includes(cid));
+    });
+  } else {
+    db.channels = [];
+    db.playlists.forEach(p => { p.channelIds = []; });
+  }
+  
+  writeDB(db);
+  res.json({ success: true, message: `${ids ? ids.length : 'Tüm'} kanal silindi` });
+});
+
+// ==================== M3U IMPORT/EXPORT ====================
+app.post('/api/channels/import', authenticateToken, requireAdmin, upload.single('m3uFile'), (req, res) => {
+  try {
+    let m3uContent = '';
+    
+    if (req.file) {
+      m3uContent = fs.readFileSync(req.file.path, 'utf-8');
+      fs.unlinkSync(req.file.path); // Temp dosyayı sil
+    } else if (req.body.m3uUrl) {
+      return res.status(400).json({ error: 'URL import henüz desteklenmiyor, dosya yükleyin' });
+    } else if (req.body.m3uContent) {
+      m3uContent = req.body.m3uContent;
+    } else {
+      return res.status(400).json({ error: 'M3U dosyası veya içerik gerekli' });
+    }
+    
+    const channels = parseM3U(m3uContent);
+    
+    if (channels.length === 0) {
+      return res.status(400).json({ error: 'Geçerli kanal bulunamadı' });
+    }
+    
+    const db = readDB();
+    let added = 0;
+    let skipped = 0;
+    
+    channels.forEach(ch => {
+      // Aynı URL'li kanal var mı kontrol et
+      const exists = db.channels.find(c => c.url === ch.url);
+      if (exists) {
+        skipped++;
+        return;
+      }
+      
+      db.channels.push({
+        id: uuidv4(),
+        name: ch.name,
+        url: ch.url,
+        logo: ch.logo || '',
+        group: ch.group || 'Genel',
+        epgId: ch.epgId || '',
+        isActive: true,
+        addedBy: req.user.username,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      
+      if (ch.group && !db.categories.includes(ch.group)) {
+        db.categories.push(ch.group);
+      }
+      added++;
+    });
+    
+    writeDB(db);
+    res.json({ 
+      success: true, 
+      message: `${added} kanal eklendi, ${skipped} kanal atlandı (tekrar)`,
+      added,
+      skipped,
+      total: db.channels.length
+    });
+  } catch (err) {
+    console.error('M3U Import Error:', err);
+    res.status(500).json({ error: 'Import sırasında hata: ' + err.message });
+  }
+});
+
+function parseM3U(content) {
+  const channels = [];
+  const lines = content.split('\n').map(l => l.trim()).filter(l => l);
+  
+  let current = null;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith('#EXTINF:')) {
+      current = {};
+      
+      // Kanal adını al
+      const nameMatch = line.match(/,(.+)$/);
+      current.name = nameMatch ? nameMatch[1].trim() : 'Bilinmeyen Kanal';
+      
+      // group-title
+      const groupMatch = line.match(/group-title="([^"]*)"/);
+      current.group = groupMatch ? groupMatch[1].trim() : 'Genel';
+      
+      // tvg-logo
+      const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+      current.logo = logoMatch ? logoMatch[1].trim() : '';
+      
+      // tvg-id
+      const idMatch = line.match(/tvg-id="([^"]*)"/);
+      current.epgId = idMatch ? idMatch[1].trim() : '';
+      
+      // tvg-name
+      const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
+      if (tvgNameMatch && !current.name) {
+        current.name = tvgNameMatch[1].trim();
+      }
+    } else if (line.startsWith('#')) {
+      continue;
+    } else if (current && (line.startsWith('http') || line.startsWith('rtsp') || line.startsWith('rtmp') || line.startsWith('mms'))) {
+      current.url = line;
+      channels.push(current);
+      current = null;
+    } else if (line.startsWith('http') || line.startsWith('rtsp') || line.startsWith('rtmp')) {
+      channels.push({
+        name: 'Kanal ' + (channels.length + 1),
+        url: line,
+        group: 'Genel',
+        logo: '',
+        epgId: ''
+      });
+    }
+  }
+  
+  return channels;
+}
+
+// ==================== CATEGORIES ====================
+app.get('/api/categories', authenticateToken, (req, res) => {
+  const db = readDB();
+  res.json({ categories: db.categories });
+});
+
+app.post('/api/categories', authenticateToken, requireAdmin, (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Kategori adı zorunlu' });
+  
+  const db = readDB();
+  if (db.categories.includes(name.trim())) {
+    return res.status(400).json({ error: 'Bu kategori zaten var' });
+  }
+  
+  db.categories.push(name.trim());
+  writeDB(db);
+  res.json({ success: true, categories: db.categories });
+});
+
+app.delete('/api/categories/:name', authenticateToken, requireAdmin, (req, res) => {
+  const { name } = req.params;
+  const db = readDB();
+  
+  db.categories = db.categories.filter(c => c !== name);
+  // Kanalların kategorisini güncelle
+  db.channels.forEach(ch => {
+    if (ch.group === name) ch.group = 'Genel';
+  });
+  
+  writeDB(db);
+  res.json({ success: true, categories: db.categories });
+});
+
+// ==================== USER PLAYLIST ROUTES ====================
+app.get('/api/playlists', authenticateToken, (req, res) => {
+  const db = readDB();
+  let playlists;
+  
+  if (req.user.role === 'admin') {
+    playlists = db.playlists;
+  } else {
+    playlists = db.playlists.filter(p => p.userId === req.user.id);
+  }
+  
+  // Kanal bilgilerini ekle
+  playlists = playlists.map(p => ({
+    ...p,
+    channelCount: p.channelIds.length,
+    m3uUrl: `${BASE_URL}/playlist/${p.token}.m3u`
+  }));
+  
+  res.json({ playlists });
+});
+
+app.post('/api/playlists', authenticateToken, (req, res) => {
+  const { name, channelIds } = req.body;
+  
+  if (!name) return res.status(400).json({ error: 'Playlist adı zorunlu' });
+  
+  const db = readDB();
+  const token = uuidv4().replace(/-/g, '');
+  
+  const playlist = {
+    id: uuidv4(),
+    userId: req.user.id,
+    username: req.user.username,
+    name: name.trim(),
+    channelIds: channelIds || [],
+    token,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastAccessed: null,
+    accessCount: 0
+  };
+  
+  db.playlists.push(playlist);
+  writeDB(db);
+  
+  res.json({ 
+    success: true, 
+    playlist: {
+      ...playlist,
+      m3uUrl: `${BASE_URL}/playlist/${token}.m3u`
+    }
+  });
+});
+
+app.put('/api/playlists/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { name, channelIds } = req.body;
+  
+  const db = readDB();
+  const idx = db.playlists.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Playlist bulunamadı' });
+  
+  // Sadece kendi playlist'ini düzenleyebilir (admin hariç)
+  if (req.user.role !== 'admin' && db.playlists[idx].userId !== req.user.id) {
+    return res.status(403).json({ error: 'Yetkiniz yok' });
+  }
+  
+  if (name) db.playlists[idx].name = name.trim();
+  if (channelIds !== undefined) db.playlists[idx].channelIds = channelIds;
+  db.playlists[idx].updatedAt = new Date().toISOString();
+  
+  writeDB(db);
+  res.json({ 
+    success: true, 
+    playlist: {
+      ...db.playlists[idx],
+      m3uUrl: `${BASE_URL}/playlist/${db.playlists[idx].token}.m3u`
+    }
+  });
+});
+
+app.delete('/api/playlists/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  
+  const idx = db.playlists.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Playlist bulunamadı' });
+  
+  if (req.user.role !== 'admin' && db.playlists[idx].userId !== req.user.id) {
+    return res.status(403).json({ error: 'Yetkiniz yok' });
+  }
+  
+  db.playlists.splice(idx, 1);
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// Playlist token yenileme
+app.post('/api/playlists/:id/regenerate-token', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  
+  const idx = db.playlists.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Playlist bulunamadı' });
+  
+  if (req.user.role !== 'admin' && db.playlists[idx].userId !== req.user.id) {
+    return res.status(403).json({ error: 'Yetkiniz yok' });
+  }
+  
+  const newToken = uuidv4().replace(/-/g, '');
+  db.playlists[idx].token = newToken;
+  db.playlists[idx].updatedAt = new Date().toISOString();
+  
+  writeDB(db);
+  res.json({ 
+    success: true, 
+    m3uUrl: `${BASE_URL}/playlist/${newToken}.m3u` 
+  });
+});
+
+// ==================== PUBLIC M3U ENDPOINT ====================
+app.get('/playlist/:token.m3u', (req, res) => {
+  const { token } = req.params;
+  const db = readDB();
+  
+  const playlist = db.playlists.find(p => p.token === token && p.isActive);
+  if (!playlist) {
+    return res.status(404).send('#EXTM3U\n# Playlist bulunamadı veya devre dışı');
+  }
+  
+  // Erişim sayacı
+  const idx = db.playlists.findIndex(p => p.token === token);
+  db.playlists[idx].lastAccessed = new Date().toISOString();
+  db.playlists[idx].accessCount = (db.playlists[idx].accessCount || 0) + 1;
+  writeDB(db);
+  
+  // M3U oluştur
+  const activeChannels = db.channels.filter(c => 
+    playlist.channelIds.includes(c.id) && c.isActive
+  );
+  
+  let m3u = '#EXTM3U\n';
+  activeChannels.forEach(ch => {
+    let extinf = `#EXTINF:-1`;
+    if (ch.epgId) extinf += ` tvg-id="${ch.epgId}"`;
+    if (ch.name) extinf += ` tvg-name="${ch.name}"`;
+    if (ch.logo) extinf += ` tvg-logo="${ch.logo}"`;
+    if (ch.group) extinf += ` group-title="${ch.group}"`;
+    extinf += `,${ch.name}`;
+    
+    m3u += extinf + '\n';
+    m3u += ch.url + '\n';
+  });
+  
+  res.setHeader('Content-Type', 'audio/mpegurl');
+  res.setHeader('Content-Disposition', `attachment; filename="${playlist.name}.m3u"`);
+  res.send(m3u);
+});
+
+// ==================== ADMIN: USER MANAGEMENT ====================
+app.get('/api/users', authenticateToken, requireAdmin, (req, res) => {
+  const db = readDB();
+  const users = db.users.map(u => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    role: u.role,
+    isActive: u.isActive,
+    createdAt: u.createdAt,
+    playlistCount: db.playlists.filter(p => p.userId === u.id).length
+  }));
+  res.json({ users });
+});
+
+app.put('/api/users/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const { isActive, role } = req.body;
+  
+  const db = readDB();
+  const idx = db.users.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+  
+  if (isActive !== undefined) db.users[idx].isActive = isActive;
+  if (role) db.users[idx].role = role;
+  
+  writeDB(db);
+  res.json({ success: true });
+});
+
+app.delete('/api/users/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  
+  const user = db.users.find(u => u.id === id);
+  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+  if (user.role === 'admin') return res.status(400).json({ error: 'Admin kullanıcı silinemez' });
+  
+  db.users = db.users.filter(u => u.id !== id);
+  db.playlists = db.playlists.filter(p => p.userId !== id);
+  
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// ==================== ADMIN: STATS ====================
+app.get('/api/stats', authenticateToken, requireAdmin, (req, res) => {
+  const db = readDB();
+  
+  const categoryStats = {};
+  db.channels.forEach(ch => {
+    const g = ch.group || 'Genel';
+    categoryStats[g] = (categoryStats[g] || 0) + 1;
+  });
+  
+  res.json({
+    totalChannels: db.channels.length,
+    activeChannels: db.channels.filter(c => c.isActive).length,
+    totalUsers: db.users.filter(u => u.role === 'user').length,
+    totalPlaylists: db.playlists.length,
+    categories: db.categories.length,
+    categoryStats,
+    recentPlaylists: db.playlists
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5)
+      .map(p => ({ name: p.name, username: p.username, channelCount: p.channelIds.length }))
+  });
+});
+
+// ==================== EXPORT ALL CHANNELS ====================
+app.get('/api/channels/export/m3u', authenticateToken, requireAdmin, (req, res) => {
+  const db = readDB();
+  
+  let m3u = '#EXTM3U\n';
+  db.channels.filter(c => c.isActive).forEach(ch => {
+    let extinf = `#EXTINF:-1`;
+    if (ch.epgId) extinf += ` tvg-id="${ch.epgId}"`;
+    if (ch.name) extinf += ` tvg-name="${ch.name}"`;
+    if (ch.logo) extinf += ` tvg-logo="${ch.logo}"`;
+    if (ch.group) extinf += ` group-title="${ch.group}"`;
+    extinf += `,${ch.name}`;
+    m3u += extinf + '\n' + ch.url + '\n';
+  });
+  
+  res.setHeader('Content-Type', 'audio/mpegurl');
+  res.setHeader('Content-Disposition', 'attachment; filename="all-channels.m3u"');
+  res.send(m3u);
+});
+
+// ==================== START SERVER ====================
+ensureDataDir();
 app.listen(PORT, () => {
-    console.log(`=== IPTV PORTAL AKTİF ===`);
-    console.log(`Port: ${PORT}`);
-    console.log(`Veri Depolama Klasörü: ${DATA_DIR}`);
+  console.log(`🚀 IPTV Panel running on port ${PORT}`);
+  console.log(`📺 Admin: ${process.env.ADMIN_USERNAME || 'admin'} / ${process.env.ADMIN_PASSWORD || 'admin123'}`);
 });
