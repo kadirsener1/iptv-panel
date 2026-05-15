@@ -2,769 +2,116 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - IPTV</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>IPTV Yönetim Paneli (Admin)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="auth-container">
-        <div class="auth-box">
-            <div class="logo-area">👑</div>
-            <h1>Admin Girişi</h1>
-            <p class="subtitle">Yönetim paneline erişin</p>
-            <div id="loginAlert" style="display:none"></div>
-            <form id="adminLoginForm">
-                <div class="form-group">
-                    <label>Kullanıcı Adı</label>
-                    <input type="text" class="form-control" id="adminUser" value="admin" required>
-                </div>
-                <div class="form-group">
-                    <label>Şifre</label>
-                    <input type="password" class="form-control" id="adminPass" placeholder="Admin şifresi" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block btn-lg">👑 Admin Girişi</button>
-            </form>
-            <div class="auth-links">
-                <a href="/">🏠 Ana Sayfa</a> · <a href="/login">👤 Kullanıcı Girişi</a>
-            </div>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-400">IPTV Admin Kontrol Paneli</h1>
+            <button onclick="localStorage.clear(); window.location.href='/login.html'" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Çıkış Yap</button>
         </div>
-    </div>
 
-    <!-- ADMIN PANEL -->
-    <div id="adminPanel" style="display:none">
-        <nav class="navbar">
-            <a href="/admin" class="navbar-brand">
-                <span class="icon">👑</span>
-                <span>IPTV Admin Panel</span>
-            </a>
-            <div class="navbar-actions">
-                <span class="navbar-user">🔑 Admin</span>
-                <button class="btn btn-sm btn-outline" onclick="changePassword()">🔒 Şifre Değiştir</button>
-                <button class="btn btn-sm btn-red" onclick="logout()">🚪 Çıkış</button>
-            </div>
-        </nav>
-
-        <div class="main-content">
-            <!-- İstatistikler -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
-                    <div class="stat-icon blue">📺</div>
-                    <div class="stat-info">
-                        <h3 id="statChannels">0</h3>
-                        <p>Toplam Kanal</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green">📂</div>
-                    <div class="stat-info">
-                        <h3 id="statCategories">0</h3>
-                        <p>Kategori</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon purple">👥</div>
-                    <div class="stat-info">
-                        <h3 id="statUsers">0</h3>
-                        <p>Toplam Kullanıcı</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon cyan">✅</div>
-                    <div class="stat-info">
-                        <h3 id="statActive">0</h3>
-                        <p>Aktif Kullanıcı</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ana Sekmeler -->
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('channels')">📺 Kanallar</button>
-                <button class="tab" onclick="switchTab('import')">📥 İçe Aktar</button>
-                <button class="tab" onclick="switchTab('users')">👥 Kullanıcılar</button>
-                <button class="tab" onclick="switchTab('settings')">⚙️ Ayarlar</button>
-            </div>
-
-            <!-- KANALLAR TAB -->
-            <div class="tab-content active" id="tab-channels">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>📺 Kanal Yönetimi</h2>
-                        <div class="card-header-actions">
-                            <button class="btn btn-sm btn-primary" onclick="openAddChannel()">➕ Kanal Ekle</button>
-                            <button class="btn btn-sm btn-green" onclick="exportM3U()">📤 M3U İndir</button>
-                            <button class="btn btn-sm btn-red" id="bulkDeleteBtn" style="display:none" onclick="bulkDelete()">🗑️ Seçilileri Sil</button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" id="searchInput" placeholder="🔍 Kanal ara..." oninput="filterChannels()">
-                            <select class="form-control filter-select" id="categoryFilter" onchange="filterChannels()">
-                                <option value="">Tüm Kategoriler</option>
-                            </select>
-                        </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-                                        <th>Kanal</th>
-                                        <th>Kategori</th>
-                                        <th>URL</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="channelsTable">
-                                    <tr><td colspan="5"><div class="loading"><div class="spinner"></div></div></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="pagination">
-                            <span class="pagination-info" id="paginationInfo"></span>
-                            <div class="pagination-buttons" id="paginationButtons"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- İÇE AKTAR TAB -->
-            <div class="tab-content" id="tab-import">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>📥 M3U İçe Aktar</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="tabs">
-                            <button class="tab active" onclick="switchImportTab('file')">📁 Dosyadan</button>
-                            <button class="tab" onclick="switchImportTab('url')">🌐 URL'den</button>
-                            <button class="tab" onclick="switchImportTab('text')">📝 Metinden</button>
-                        </div>
-
-                        <!-- Dosyadan -->
-                        <div class="tab-content active" id="import-file">
-                            <form id="importFileForm" enctype="multipart/form-data">
-                                <div class="file-upload" id="dropZone" onclick="document.getElementById('m3uFile').click()">
-                                    <div class="icon">📁</div>
-                                    <p>M3U/M3U8 dosyasını sürükleyin veya tıklayın</p>
-                                    <p class="form-text" id="fileName">Dosya seçilmedi</p>
-                                    <input type="file" id="m3uFile" accept=".m3u,.m3u8,.txt">
-                                </div>
-                                <div class="form-group" style="margin-top:1rem">
-                                    <label>Varsayılan Kategori</label>
-                                    <input type="text" class="form-control" id="importFileCategory" placeholder="Kategori bulunamazsa kullanılacak" value="İçe Aktarılan">
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-lg">📥 İçe Aktar</button>
-                            </form>
-                        </div>
-
-                        <!-- URL'den -->
-                        <div class="tab-content" id="import-url">
-                            <form id="importUrlForm">
-                                <div class="form-group">
-                                    <label>M3U URL</label>
-                                    <input type="url" class="form-control" id="importUrl" placeholder="https://example.com/playlist.m3u" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Varsayılan Kategori</label>
-                                    <input type="text" class="form-control" id="importUrlCategory" placeholder="Kategori bulunamazsa kullanılacak" value="İçe Aktarılan">
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-lg">📥 URL'den İçe Aktar</button>
-                            </form>
-                        </div>
-
-                        <!-- Metinden -->
-                        <div class="tab-content" id="import-text">
-                            <form id="importTextForm">
-                                <div class="form-group">
-                                    <label>M3U İçeriği</label>
-                                    <textarea class="form-control" id="importText" rows="12" placeholder="#EXTM3U
-#EXTINF:-1 group-title=&quot;Spor&quot;,Kanal Adı
-http://example.com/stream.m3u8" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label>Varsayılan Kategori</label>
-                                    <input type="text" class="form-control" id="importTextCategory" value="İçe Aktarılan">
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-lg">📥 Metinden İçe Aktar</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KULLANICILAR TAB -->
-            <div class="tab-content" id="tab-users">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>👥 Kullanıcı Yönetimi</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Kullanıcı</th>
-                                        <th>E-posta</th>
-                                        <th>Durum</th>
-                                        <th>Token</th>
-                                        <th>Kayıt Tarihi</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usersTable">
-                                    <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AYARLAR TAB -->
-            <div class="tab-content" id="tab-settings">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>⚙️ Ayarlar</h2>
-                    </div>
-                    <div class="card-body">
-                        <h3 style="margin-bottom:1rem">🔒 Şifre Değiştir</h3>
-                        <form id="changePassForm" style="max-width:400px">
-                            <div class="form-group">
-                                <label>Mevcut Şifre</label>
-                                <input type="password" class="form-control" id="currentPass" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Yeni Şifre</label>
-                                <input type="password" class="form-control" id="newPass" required minlength="6">
-                            </div>
-                            <div class="form-group">
-                                <label>Yeni Şifre Tekrar</label>
-                                <input type="password" class="form-control" id="newPass2" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">🔒 Şifreyi Değiştir</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- KANAL EKLE/DÜZENLE MODAL -->
-    <div class="modal-overlay" id="channelModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="modalTitle">➕ Kanal Ekle</h3>
-                <button class="modal-close" onclick="closeModal('channelModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="channelForm">
-                    <input type="hidden" id="channelId">
-                    <div class="form-group">
-                        <label>Kanal Adı *</label>
-                        <input type="text" class="form-control" id="channelName" placeholder="Kanal adı" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Stream URL *</label>
-                        <input type="text" class="form-control" id="channelUrl" placeholder="http://... veya rtmp://..." required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Kategori</label>
-                            <input type="text" class="form-control" id="channelCategory" placeholder="Spor, Haber, Film..." list="categoryList">
-                            <datalist id="categoryList"></datalist>
-                        </div>
-                        <div class="form-group">
-                            <label>EPG ID</label>
-                            <input type="text" class="form-control" id="channelEpgId" placeholder="EPG tanımlayıcı">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Logo URL</label>
-                        <input type="text" class="form-control" id="channelLogo" placeholder="https://... logo resmi">
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Manuel Kanal Ekleme -->
+            <div class="bg-slate-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-emerald-400">Tekil Kanal Ekle</h2>
+                <form id="channelForm" class="space-y-3">
+                    <input type="text" id="chName" placeholder="Kanal Adı" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <input type="text" id="chCategory" placeholder="Kategori (örn: Spor, Sinema)" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <input type="text" id="chUrl" placeholder="Yayın URL'si (m3u8)" class="w-full p-2 bg-slate-700 rounded border border-slate-600" required>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 p-2 rounded font-semibold">Kanalı Kaydet</button>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('channelModal')">İptal</button>
-                <button class="btn btn-primary" onclick="saveChannel()">💾 Kaydet</button>
+
+            <!-- M3U Toplu Import -->
+            <div class="bg-slate-800 p-6 rounded-lg md:col-span-2">
+                <h2 class="text-xl font-bold mb-4 text-indigo-400">Toplu M3U Yükle (.m3u metnini yapıştırın)</h2>
+                <textarea id="m3uContent" rows="4" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Belgesel&quot;,Discovery&#10;http://ornek.com/stream.m3u8" class="w-full p-2 bg-slate-700 rounded border border-slate-600 text-xs font-mono"></textarea>
+                <button onclick="importM3U()" class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded font-semibold">M3U İçeriğini Çöz ve Ekle</button>
+            </div>
+        </div>
+
+        <!-- Kanal Listesi -->
+        <div class="mt-10 bg-slate-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">Sistemdeki Tüm Kanallar</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400">
+                            <th class="p-3">Kanal Adı</th>
+                            <th class="p-3">Kategori</th>
+                            <th class="p-3">Yayın Linki</th>
+                            <th class="p-3">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="channelTableBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- TOAST CONTAINER -->
-    <div class="toast-container" id="toastContainer"></div>
-
     <script>
-        // ==================== STATE ====================
-        let allChannels = [];
-        let filteredChannels = [];
-        let selectedIds = new Set();
-        let currentPage = 1;
-        const perPage = 20;
+        if(localStorage.getItem('role') !== 'admin') window.location.href = '/login.html';
 
-        // ==================== INIT ====================
-        (async function init() {
-            const res = await fetch('/api/session');
-            const data = await res.json();
-            if (data.loggedIn && data.isAdmin) {
-                showAdminPanel();
-            }
-        })();
-
-        // ==================== AUTH ====================
-        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const alertDiv = document.getElementById('loginAlert');
-            try {
-                const res = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: document.getElementById('adminUser').value,
-                        password: document.getElementById('adminPass').value
-                    })
-                });
-                if (res.ok) {
-                    showAdminPanel();
-                } else {
-                    const data = await res.json();
-                    alertDiv.className = 'alert alert-error';
-                    alertDiv.textContent = '❌ ' + data.error;
-                    alertDiv.style.display = 'flex';
-                }
-            } catch {
-                alertDiv.className = 'alert alert-error';
-                alertDiv.textContent = '❌ Bağlantı hatası';
-                alertDiv.style.display = 'flex';
-            }
-        });
-
-        function showAdminPanel() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            loadStats();
-            loadChannels();
-            loadUsers();
-        }
-
-        async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.reload();
-        }
-
-        // ==================== STATS ====================
-        async function loadStats() {
-            const res = await fetch('/api/stats');
-            const stats = await res.json();
-            document.getElementById('statChannels').textContent = stats.totalChannels;
-            document.getElementById('statCategories').textContent = stats.totalCategories;
-            document.getElementById('statUsers').textContent = stats.totalUsers;
-            document.getElementById('statActive').textContent = stats.activeUsers;
-        }
-
-        // ==================== CHANNELS ====================
         async function loadChannels() {
-            const res = await fetch('/api/channels');
-            allChannels = await res.json();
+            const res = await fetch('/api/admin/channels');
+            const channels = await res.json();
+            const tbody = document.getElementById('channelTableBody');
+            tbody.innerHTML = '';
             
-            // Kategori filtresi güncelle
-            const categories = [...new Set(allChannels.map(c => c.category))].filter(Boolean).sort();
-            const filterSelect = document.getElementById('categoryFilter');
-            const catList = document.getElementById('categoryList');
-            
-            filterSelect.innerHTML = '<option value="">Tüm Kategoriler</option>';
-            catList.innerHTML = '';
-            categories.forEach(cat => {
-                filterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-                catList.innerHTML += `<option value="${cat}">`;
+            channels.forEach(ch => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-700 hover:bg-slate-750">
+                        <td class="p-3">${ch.name}</td>
+                        <td class="p-3"><span class="bg-slate-700 px-2 py-1 rounded text-xs">${ch.category}</span></td>
+                        <td class="p-3 text-xs text-slate-400 truncate max-w-xs">${ch.url}</td>
+                        <td class="p-3">
+                            <button onclick="deleteChannel('${ch.id}')" class="bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Sil</button>
+                        </td>
+                    </tr>
+                `;
             });
-            
-            filterChannels();
         }
 
-        function filterChannels() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const category = document.getElementById('categoryFilter').value;
-            
-            filteredChannels = allChannels.filter(ch => {
-                const matchSearch = !search || ch.name.toLowerCase().includes(search) || ch.url.toLowerCase().includes(search);
-                const matchCat = !category || ch.category === category;
-                return matchSearch && matchCat;
+        document.getElementById('channelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('chName').value;
+            const category = document.getElementById('chCategory').value;
+            const url = document.getElementById('chUrl').value;
+
+            await fetch('/api/admin/channels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, category, url })
             });
-            
-            currentPage = 1;
-            renderChannels();
-        }
-
-        function renderChannels() {
-            const tbody = document.getElementById('channelsTable');
-            const start = (currentPage - 1) * perPage;
-            const end = start + perPage;
-            const pageChannels = filteredChannels.slice(start, end);
-            
-            if (pageChannels.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📺</div><h3>Kanal bulunamadı</h3><p>Henüz kanal eklenmemiş veya arama sonucu boş</p></div></td></tr>`;
-                return;
-            }
-            
-            tbody.innerHTML = pageChannels.map(ch => `
-                <tr>
-                    <td class="checkbox-cell">
-                        <input type="checkbox" ${selectedIds.has(ch.id) ? 'checked' : ''} onchange="toggleSelect('${ch.id}')">
-                    </td>
-                    <td>
-                        <div class="channel-name">
-                            ${ch.logo ? `<img src="${ch.logo}" class="channel-logo" onerror="this.style.display='none'">` : ''}
-                            ${escapeHtml(ch.name)}
-                        </div>
-                    </td>
-                    <td><span class="badge badge-blue">${escapeHtml(ch.category || 'Genel')}</span></td>
-                    <td><div class="channel-url" title="${escapeHtml(ch.url)}">${escapeHtml(ch.url)}</div></td>
-                    <td>
-                        <div class="actions-cell">
-                            <button class="btn btn-sm btn-outline" onclick="editChannel('${ch.id}')">✏️</button>
-                            <button class="btn btn-sm btn-red" onclick="deleteChannel('${ch.id}')">🗑️</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-            
-            // Pagination
-            const totalPages = Math.ceil(filteredChannels.length / perPage);
-            document.getElementById('paginationInfo').textContent = 
-                `${filteredChannels.length} kanaldan ${start + 1}-${Math.min(end, filteredChannels.length)} gösteriliyor`;
-            
-            let pagBtns = '';
-            if (currentPage > 1) pagBtns += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage-1})">◀ Önceki</button>`;
-            pagBtns += `<span class="btn btn-sm btn-primary">${currentPage} / ${totalPages || 1}</span>`;
-            if (currentPage < totalPages) pagBtns += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage+1})">Sonraki ▶</button>`;
-            document.getElementById('paginationButtons').innerHTML = pagBtns;
-            
-            updateBulkBtn();
-        }
-
-        function goPage(p) { currentPage = p; renderChannels(); }
-
-        function toggleSelect(id) {
-            if (selectedIds.has(id)) selectedIds.delete(id);
-            else selectedIds.add(id);
-            updateBulkBtn();
-        }
-
-        function toggleSelectAll() {
-            const checked = document.getElementById('selectAll').checked;
-            const start = (currentPage - 1) * perPage;
-            const end = start + perPage;
-            const pageChannels = filteredChannels.slice(start, end);
-            pageChannels.forEach(ch => {
-                if (checked) selectedIds.add(ch.id);
-                else selectedIds.delete(ch.id);
-            });
-            renderChannels();
-        }
-
-        function updateBulkBtn() {
-            document.getElementById('bulkDeleteBtn').style.display = selectedIds.size > 0 ? 'inline-flex' : 'none';
-        }
-
-        function openAddChannel() {
-            document.getElementById('modalTitle').textContent = '➕ Kanal Ekle';
-            document.getElementById('channelId').value = '';
             document.getElementById('channelForm').reset();
-            openModal('channelModal');
-        }
-
-        function editChannel(id) {
-            const ch = allChannels.find(c => c.id === id);
-            if (!ch) return;
-            document.getElementById('modalTitle').textContent = '✏️ Kanal Düzenle';
-            document.getElementById('channelId').value = ch.id;
-            document.getElementById('channelName').value = ch.name;
-            document.getElementById('channelUrl').value = ch.url;
-            document.getElementById('channelCategory').value = ch.category || '';
-            document.getElementById('channelLogo').value = ch.logo || '';
-            document.getElementById('channelEpgId').value = ch.epgId || '';
-            openModal('channelModal');
-        }
-
-        async function saveChannel() {
-            const id = document.getElementById('channelId').value;
-            const data = {
-                name: document.getElementById('channelName').value,
-                url: document.getElementById('channelUrl').value,
-                category: document.getElementById('channelCategory').value || 'Genel',
-                logo: document.getElementById('channelLogo').value,
-                epgId: document.getElementById('channelEpgId').value
-            };
-            
-            if (!data.name || !data.url) {
-                showToast('Kanal adı ve URL gerekli!', 'error');
-                return;
-            }
-            
-            try {
-                const url = id ? `/api/channels/${id}` : '/api/channels';
-                const method = id ? 'PUT' : 'POST';
-                const res = await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                if (res.ok) {
-                    showToast(id ? 'Kanal güncellendi!' : 'Kanal eklendi!', 'success');
-                    closeModal('channelModal');
-                    loadChannels();
-                    loadStats();
-                } else {
-                    const err = await res.json();
-                    showToast(err.error, 'error');
-                }
-            } catch {
-                showToast('Bağlantı hatası!', 'error');
-            }
-        }
+            loadChannels();
+        });
 
         async function deleteChannel(id) {
-            if (!confirm('Bu kanalı silmek istediğinize emin misiniz?')) return;
-            try {
-                await fetch(`/api/channels/${id}`, { method: 'DELETE' });
-                showToast('Kanal silindi!', 'success');
-                selectedIds.delete(id);
+            if(confirm('Kanalı silmek istediğinize emin misiniz?')) {
+                await fetch(`/api/admin/channels/${id}`, { method: 'DELETE' });
                 loadChannels();
-                loadStats();
-            } catch {
-                showToast('Silme hatası!', 'error');
             }
         }
 
-        async function bulkDelete() {
-            if (!confirm(`${selectedIds.size} kanalı silmek istediğinize emin misiniz?`)) return;
-            try {
-                await fetch('/api/channels/bulk-delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids: [...selectedIds] })
-                });
-                showToast(`${selectedIds.size} kanal silindi!`, 'success');
-                selectedIds.clear();
+        async function importM3U() {
+            const m3uContent = document.getElementById('m3uContent').value;
+            const res = await fetch('/api/admin/import-m3u', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ m3uContent })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert(`${data.count} kanal başarıyla sisteme entegre edildi!`);
+                document.getElementById('m3uContent').value = '';
                 loadChannels();
-                loadStats();
-            } catch {
-                showToast('Toplu silme hatası!', 'error');
             }
         }
 
-        async function exportM3U() {
-            window.location.href = '/api/export/m3u';
-        }
-
-        // ==================== IMPORT ====================
-        // Dosya yükleme
-        const dropZone = document.getElementById('dropZone');
-        const m3uFile = document.getElementById('m3uFile');
-
-        ['dragenter', 'dragover'].forEach(e => {
-            dropZone.addEventListener(e, (ev) => { ev.preventDefault(); dropZone.classList.add('dragover'); });
-        });
-        ['dragleave', 'drop'].forEach(e => {
-            dropZone.addEventListener(e, (ev) => { ev.preventDefault(); dropZone.classList.remove('dragover'); });
-        });
-        dropZone.addEventListener('drop', (e) => {
-            m3uFile.files = e.dataTransfer.files;
-            document.getElementById('fileName').textContent = m3uFile.files[0]?.name || 'Dosya seçilmedi';
-        });
-        m3uFile.addEventListener('change', () => {
-            document.getElementById('fileName').textContent = m3uFile.files[0]?.name || 'Dosya seçilmedi';
-        });
-
-        document.getElementById('importFileForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!m3uFile.files[0]) { showToast('Dosya seçin!', 'error'); return; }
-            
-            const formData = new FormData();
-            formData.append('m3ufile', m3uFile.files[0]);
-            formData.append('defaultCategory', document.getElementById('importFileCategory').value);
-            
-            try {
-                const res = await fetch('/api/import/file', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`${data.imported} kanal içe aktarıldı!`, 'success');
-                    loadChannels();
-                    loadStats();
-                    e.target.reset();
-                    document.getElementById('fileName').textContent = 'Dosya seçilmedi';
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch { showToast('İçe aktarma hatası!', 'error'); }
-        });
-
-        document.getElementById('importUrlForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const res = await fetch('/api/import/url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: document.getElementById('importUrl').value,
-                        defaultCategory: document.getElementById('importUrlCategory').value
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`${data.imported} kanal içe aktarıldı!`, 'success');
-                    loadChannels();
-                    loadStats();
-                    e.target.reset();
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch { showToast('İçe aktarma hatası!', 'error'); }
-        });
-
-        document.getElementById('importTextForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const res = await fetch('/api/import/text', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        content: document.getElementById('importText').value,
-                        defaultCategory: document.getElementById('importTextCategory').value
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`${data.imported} kanal içe aktarıldı!`, 'success');
-                    loadChannels();
-                    loadStats();
-                    e.target.reset();
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch { showToast('İçe aktarma hatası!', 'error'); }
-        });
-
-        // ==================== USERS ====================
-        async function loadUsers() {
-            const res = await fetch('/api/users');
-            const users = await res.json();
-            const tbody = document.getElementById('usersTable');
-            
-            if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">👥</div><h3>Henüz kullanıcı yok</h3></div></td></tr>`;
-                return;
-            }
-            
-            tbody.innerHTML = users.map(u => `
-                <tr>
-                    <td><strong>${escapeHtml(u.username)}</strong></td>
-                    <td>${escapeHtml(u.email)}</td>
-                    <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? '✅ Aktif' : '❌ Devre Dışı'}</span></td>
-                    <td><code style="font-size:0.7rem;color:var(--text-muted)">${u.token.substring(0, 12)}...</code></td>
-                    <td style="font-size:0.8rem;color:var(--text-muted)">${new Date(u.createdAt).toLocaleDateString('tr')}</td>
-                    <td>
-                        <div class="actions-cell">
-                            <button class="btn btn-sm ${u.active ? 'btn-yellow' : 'btn-green'}" onclick="toggleUser('${u.id}')">${u.active ? '⏸️' : '▶️'}</button>
-                            <button class="btn btn-sm btn-outline" onclick="regenerateToken('${u.id}')" title="Token yenile">🔄</button>
-                            <button class="btn btn-sm btn-red" onclick="deleteUser('${u.id}')">🗑️</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async function toggleUser(id) {
-            await fetch(`/api/users/${id}/toggle`, { method: 'PUT' });
-            loadUsers();
-            loadStats();
-            showToast('Kullanıcı durumu değiştirildi!', 'success');
-        }
-
-        async function regenerateToken(id) {
-            if (!confirm('Token yenilensin mi? Kullanıcının mevcut linki çalışmayacak.')) return;
-            await fetch(`/api/users/${id}/regenerate-token`, { method: 'PUT' });
-            loadUsers();
-            showToast('Token yenilendi!', 'success');
-        }
-
-        async function deleteUser(id) {
-            if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
-            await fetch(`/api/users/${id}`, { method: 'DELETE' });
-            loadUsers();
-            loadStats();
-            showToast('Kullanıcı silindi!', 'success');
-        }
-
-        // ==================== SETTINGS ====================
-        document.getElementById('changePassForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newPass = document.getElementById('newPass').value;
-            if (newPass !== document.getElementById('newPass2').value) {
-                showToast('Şifreler eşleşmiyor!', 'error');
-                return;
-            }
-            try {
-                const res = await fetch('/api/admin/change-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        currentPassword: document.getElementById('currentPass').value,
-                        newPassword: newPass
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('Şifre değiştirildi!', 'success');
-                    e.target.reset();
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch { showToast('Hata!', 'error'); }
-        });
-
-        function changePassword() { switchTab('settings'); }
-
-        // ==================== TABS ====================
-        function switchTab(name) {
-            document.querySelectorAll('.tabs:first-of-type .tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.main-content > .tab-content').forEach(t => t.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById('tab-' + name).classList.add('active');
-        }
-
-        function switchImportTab(name) {
-            const parent = event.target.closest('.card-body');
-            parent.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
-            parent.querySelectorAll(':scope > .tab-content').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('import-' + name).classList.add('active');
-        }
-
-        // ==================== MODAL ====================
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        // ==================== TOAST ====================
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-            toast.innerHTML = `${icons[type] || ''} ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        // ==================== UTILS ====================
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+        loadChannels();
     </script>
 </body>
 </html>
