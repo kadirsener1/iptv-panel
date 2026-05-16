@@ -3,113 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPTV Panel - Playlist'lerim</title>
+  <title>IPTV Panel - Playlistlerim</title>
   <link rel="stylesheet" href="/css/style.css">
-<script src="/js/app.js"></script>
 </head>
 <body>
-  <div id="app" class="app-container">
-    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <div class="app-container">
+    <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <h2>📺 IPTV Panel</h2>
-        <span>Kullanıcı Paneli</span>
+        <span>Kullanici Paneli</span>
       </div>
       <ul class="sidebar-menu">
-        <li><a href="#" onclick="showSection('myplaylists')" class="active" data-section="myplaylists"><span class="icon">📋</span> Playlist'lerim</a></li>
-        <li><a href="#" onclick="showSection('create')" data-section="create"><span class="icon">➕</span> Yeni Playlist</a></li>
-        <li><a href="#" onclick="showSection('browse')" data-section="browse"><span class="icon">📺</span> Kanallar</a></li>
+        <li><a href="#" data-section="myplaylists" class="active" onclick="navigate('myplaylists')">📋 Playlistlerim</a></li>
+        <li><a href="#" data-section="create" onclick="navigate('create')">➕ Yeni Playlist</a></li>
+        <li><a href="#" data-section="browse" onclick="navigate('browse')">📺 Kanallar</a></li>
       </ul>
       <div class="sidebar-footer">
         <div class="user-info">
-          <div class="avatar" id="userAvatar">U</div>
+          <div class="avatar" id="avatarEl">U</div>
           <div>
-            <div style="font-size:14px;font-weight:600" id="userName">Kullanıcı</div>
-            <div style="font-size:12px;color:var(--text-muted)">Üye</div>
+            <div style="font-size:14px;font-weight:600" id="nameEl">Kullanici</div>
+            <div style="font-size:12px;color:var(--text-muted)">Uye</div>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm btn-full" onclick="logout()">🚪 Çıkış Yap</button>
+        <button class="btn btn-secondary btn-sm btn-full" onclick="doLogout()">Cikis Yap</button>
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
 
       <!-- MY PLAYLISTS -->
-      <div id="section-myplaylists" class="section">
+      <div id="sec-myplaylists" class="section">
         <div class="page-header">
-          <h1>📋 Playlist'lerim</h1>
-          <button class="btn btn-primary" onclick="showSection('create')">➕ Yeni Playlist</button>
+          <h1>📋 Playlistlerim</h1>
+          <button class="btn btn-primary" onclick="navigate('create')">Yeni Playlist</button>
         </div>
-        <div class="playlist-grid" id="myPlaylistsGrid"></div>
+        <div class="playlist-grid" id="myPlaylistsBox"></div>
       </div>
 
       <!-- CREATE PLAYLIST -->
-      <div id="section-create" class="section" style="display:none">
-        <div class="page-header">
-          <h1>➕ Yeni Playlist Oluştur</h1>
-        </div>
-        
+      <div id="sec-create" class="section" style="display:none">
+        <div class="page-header"><h1>➕ Yeni Playlist Olustur</h1></div>
         <div class="card">
           <div class="card-body">
             <div class="form-group">
-              <label>📝 Playlist Adı</label>
-              <input type="text" id="newPlaylistName" placeholder="Örn: Spor Kanallarım">
+              <label>Playlist Adi</label>
+              <input type="text" id="newPlName" placeholder="Spor Kanallarim">
             </div>
-            
-            <h3 style="margin-bottom:12px">📺 Kanal Seçimi</h3>
-            
+
+            <h3 style="margin:16px 0 12px">Kanal Secimi</h3>
+
             <div class="search-bar">
-              <input type="text" id="browseSearch" placeholder="🔍 Kanal ara..." oninput="filterBrowseChannels()">
-              <select id="browseCategory" onchange="filterBrowseChannels()">
-                <option value="all">Tüm Kategoriler</option>
+              <input type="text" id="createSearch" placeholder="Kanal ara..." oninput="renderCreateSelector()">
+              <select id="createCatFilter" onchange="renderCreateSelector()">
+                <option value="all">Tum Kategoriler</option>
               </select>
             </div>
-            
+
             <div class="select-controls">
-              <button class="btn btn-sm btn-secondary" onclick="selectAllVisible()">✅ Tümünü Seç</button>
-              <button class="btn btn-sm btn-secondary" onclick="deselectAll()">❌ Seçimi Kaldır</button>
-              <span style="margin-left:auto;font-size:13px;color:var(--text-muted)" id="selectedCount">0 kanal seçili</span>
+              <button class="btn btn-sm btn-secondary" onclick="createSelectAll()">Tumunu Sec</button>
+              <button class="btn btn-sm btn-secondary" onclick="createDeselectAll()">Secimi Kaldir</button>
+              <span style="margin-left:auto;font-size:13px;color:var(--text-muted)" id="createCount">0 kanal secili</span>
             </div>
-            
-            <div class="channel-selector" id="channelSelector"></div>
-            
-            <div class="mt-4">
-              <button class="btn btn-primary btn-lg" onclick="createPlaylist()">🎉 Playlist Oluştur</button>
-            </div>
+
+            <div class="channel-selector" id="createSelectorBox"></div>
+
+            <button class="btn btn-primary btn-lg mt-4" onclick="createPlaylist()">Playlist Olustur</button>
           </div>
         </div>
       </div>
 
       <!-- BROWSE CHANNELS -->
-      <div id="section-browse" class="section" style="display:none">
-        <div class="page-header">
-          <h1>📺 Mevcut Kanallar</h1>
-        </div>
-        
+      <div id="sec-browse" class="section" style="display:none">
+        <div class="page-header"><h1>📺 Mevcut Kanallar</h1></div>
         <div class="search-bar">
-          <input type="text" id="browseSearch2" placeholder="🔍 Kanal ara..." oninput="loadBrowseChannels()">
-          <select id="browseCategory2" onchange="loadBrowseChannels()">
-            <option value="all">Tüm Kategoriler</option>
+          <input type="text" id="browseSearch" placeholder="Kanal ara..." oninput="loadBrowse()">
+          <select id="browseCatFilter" onchange="loadBrowse()">
+            <option value="all">Tum Kategoriler</option>
           </select>
         </div>
-        
         <div class="card">
           <div class="table-container">
             <table>
-              <thead>
-                <tr>
-                  <th>Kanal</th>
-                  <th>Kategori</th>
-                  <th>Durum</th>
-                </tr>
-              </thead>
-              <tbody id="browseTable"></tbody>
+              <thead><tr><th>Kanal</th><th>Kategori</th></tr></thead>
+              <tbody id="browseTableBody"></tbody>
             </table>
           </div>
-          <div class="pagination" id="browsePagination"></div>
         </div>
       </div>
 
@@ -117,383 +98,426 @@
   </div>
 
   <!-- Edit Playlist Modal -->
-  <div class="modal-overlay" id="editPlaylistModal">
+  <div class="modal-overlay" id="editModal">
     <div class="modal" style="max-width:700px">
       <div class="modal-header">
-        <h2>✏️ Playlist Düzenle</h2>
-        <button class="modal-close" onclick="closeModal('editPlaylistModal')">&times;</button>
+        <h2>Playlist Duzenle</h2>
+        <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('active')">&times;</button>
       </div>
       <div class="modal-body">
-        <input type="hidden" id="editPlaylistId">
+        <input type="hidden" id="editPlId">
         <div class="form-group">
-          <label>Playlist Adı</label>
-          <input type="text" id="editPlaylistName">
+          <label>Playlist Adi</label>
+          <input type="text" id="editPlName">
         </div>
-        
-        <h3 style="margin-bottom:12px">📺 Kanalları Düzenle</h3>
-        
         <div class="search-bar">
-          <input type="text" id="editSearch" placeholder="🔍 Ara..." oninput="filterEditChannels()">
-          <select id="editCategory" onchange="filterEditChannels()">
-            <option value="all">Tümü</option>
+          <input type="text" id="editSearch" placeholder="Ara..." oninput="renderEditSelector()">
+          <select id="editCatFilter" onchange="renderEditSelector()">
+            <option value="all">Tum</option>
           </select>
         </div>
-        
         <div class="select-controls">
-          <button class="btn btn-sm btn-secondary" onclick="editSelectAllVisible()">✅ Tümünü Seç</button>
-          <button class="btn btn-sm btn-secondary" onclick="editDeselectAll()">❌ Kaldır</button>
-          <span style="margin-left:auto;font-size:13px;color:var(--text-muted)" id="editSelectedCount">0 seçili</span>
+          <button class="btn btn-sm btn-secondary" onclick="editSelectAll()">Tumunu Sec</button>
+          <button class="btn btn-sm btn-secondary" onclick="editDeselectAll()">Kaldir</button>
+          <span style="margin-left:auto;font-size:13px;color:var(--text-muted)" id="editCount">0 secili</span>
         </div>
-        
-        <div class="channel-selector" id="editChannelSelector"></div>
+        <div class="channel-selector" id="editSelectorBox"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('editPlaylistModal')">İptal</button>
-        <button class="btn btn-primary" onclick="updatePlaylist()">💾 Kaydet</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('editModal').classList.remove('active')">Iptal</button>
+        <button class="btn btn-primary" onclick="saveEditPlaylist()">Kaydet</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <div class="toast-container" id="toasts"></div>
 
   <script>
-    let currentUser = null;
-    let allChannels = [];
-    let selectedNewIds = new Set();
-    let editSelectedIds = new Set();
-    let browsePage = 1;
+    var TOKEN = '';
+    var USER = null;
+    var allChannels = [];
+    var createSelectedIds = {};
+    var editSelectedIds = {};
 
-    // ==================== INIT ====================
-    async function init() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (!data.user) { window.location.href = '/'; return; }
-        if (data.user.role === 'admin') { window.location.href = '/admin'; return; }
-        
-        currentUser = data.user;
-        document.getElementById('userName').textContent = currentUser.username;
-        document.getElementById('userAvatar').textContent = currentUser.username[0].toUpperCase();
-        
-        await loadAllChannels();
-        loadMyPlaylists();
-        loadCategoryFilters();
-      } catch {
-        window.location.href = '/';
+    // ==================== HELPERS ====================
+    function getCookie(name) {
+      var parts = document.cookie.split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].trim();
+        if (c.indexOf(name + '=') === 0) return c.substring(name.length + 1);
+      }
+      return '';
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function toast(msg, type) {
+      var box = document.getElementById('toasts');
+      var el = document.createElement('div');
+      el.className = 'toast toast-' + (type || 'info');
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(function() { el.remove(); }, 4000);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() { toast('Kopyalandi!', 'success'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Kopyalandi!', 'success');
       }
     }
 
+    function api(method, url, body, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+      if (TOKEN) xhr.setRequestHeader('Authorization', 'Bearer ' + TOKEN);
+      if (body) xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          try { callback(null, JSON.parse(xhr.responseText)); }
+          catch (e) { callback('Hata', null); }
+        }
+      };
+      xhr.onerror = function() { callback('Baglanti hatasi', null); };
+      xhr.send(body ? JSON.stringify(body) : null);
+    }
+
+    // ==================== INIT ====================
+    function initApp() {
+      TOKEN = getCookie('token');
+      if (!TOKEN) { window.location.href = '/'; return; }
+
+      api('GET', '/api/auth/me', null, function(err, data) {
+        if (err || !data || !data.user) { window.location.href = '/'; return; }
+        if (data.user.role === 'admin') { window.location.href = '/admin'; return; }
+
+        USER = data.user;
+        document.getElementById('nameEl').textContent = USER.username;
+        document.getElementById('avatarEl').textContent = USER.username[0].toUpperCase();
+
+        loadAllChannels(function() {
+          loadMyPlaylists();
+          loadCatFilters();
+        });
+      });
+    }
+
     // ==================== NAVIGATION ====================
-    function showSection(name) {
-      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-      document.getElementById('section-' + name).style.display = 'block';
-      document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
-      const link = document.querySelector(`[data-section="${name}"]`);
-      if (link) link.classList.add('active');
-      document.querySelector('.sidebar').classList.remove('open');
-      
-      if (name === 'myplaylists') loadMyPlaylists();
-      if (name === 'create') renderChannelSelector();
-      if (name === 'browse') loadBrowseChannels();
-    }
+    function navigate(section) {
+      var secs = document.querySelectorAll('.section');
+      for (var i = 0; i < secs.length; i++) secs[i].style.display = 'none';
+      var target = document.getElementById('sec-' + section);
+      if (target) target.style.display = 'block';
 
-    // ==================== HELPERS ====================
-    function toast(msg, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const t = document.createElement('div');
-      t.className = `toast toast-${type}`;
-      const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-      t.innerHTML = `${icons[type] || ''} ${msg}`;
-      container.appendChild(t);
-      setTimeout(() => t.remove(), 4000);
-    }
+      var links = document.querySelectorAll('.sidebar-menu a');
+      for (var j = 0; j < links.length; j++) links[j].classList.remove('active');
+      var al = document.querySelector('[data-section="' + section + '"]');
+      if (al) al.classList.add('active');
 
-    function escHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
+      document.getElementById('sidebar').classList.remove('open');
 
-    function copyLink(url) {
-      navigator.clipboard.writeText(url).then(() => toast('Link kopyalandı!', 'success'));
-    }
-
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-    async function logout() {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      document.cookie = 'token=; Max-Age=0';
-      window.location.href = '/';
+      if (section === 'myplaylists') loadMyPlaylists();
+      if (section === 'create') renderCreateSelector();
+      if (section === 'browse') loadBrowse();
+      return false;
     }
 
     // ==================== LOAD DATA ====================
-    async function loadAllChannels() {
-      const res = await fetch('/api/channels?limit=9999');
-      const data = await res.json();
-      allChannels = data.channels.filter(c => c.isActive);
+    function loadAllChannels(cb) {
+      api('GET', '/api/channels?limit=9999', null, function(err, data) {
+        if (data && data.channels) {
+          allChannels = [];
+          for (var i = 0; i < data.channels.length; i++) {
+            if (data.channels[i].isActive) allChannels.push(data.channels[i]);
+          }
+        }
+        if (cb) cb();
+      });
     }
 
-    function loadCategoryFilters() {
-      const categories = [...new Set(allChannels.map(c => c.group).filter(Boolean))];
-      ['browseCategory', 'browseCategory2', 'editCategory'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.innerHTML = '<option value="all">Tüm Kategoriler</option>' +
-            categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    function loadCatFilters() {
+      var cats = {};
+      for (var i = 0; i < allChannels.length; i++) {
+        var g = allChannels[i].group || 'Genel';
+        cats[g] = true;
+      }
+      var keys = Object.keys(cats);
+      var optHtml = '<option value="all">Tum Kategoriler</option>';
+      for (var k = 0; k < keys.length; k++) {
+        optHtml += '<option value="' + esc(keys[k]) + '">' + esc(keys[k]) + '</option>';
+      }
+      var selects = ['createCatFilter', 'browseCatFilter', 'editCatFilter'];
+      for (var s = 0; s < selects.length; s++) {
+        var el = document.getElementById(selects[s]);
+        if (el) el.innerHTML = optHtml;
+      }
+    }
+
+    // ==================== MY PLAYLISTS ====================
+    function loadMyPlaylists() {
+      api('GET', '/api/playlists', null, function(err, data) {
+        if (!data) return;
+        var pls = data.playlists || [];
+        var box = document.getElementById('myPlaylistsBox');
+
+        if (pls.length === 0) {
+          box.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px">' +
+            '<div style="font-size:64px;opacity:0.5">📋</div>' +
+            '<h3 style="margin:12px 0 8px">Henuz playlist yok</h3>' +
+            '<p style="color:var(--text-muted)">Yeni bir playlist olusturun</p>' +
+            '<button class="btn btn-primary mt-4" onclick="navigate(\'create\')">Ilk Playlist</button></div>';
+          return;
+        }
+
+        var html = '';
+        for (var i = 0; i < pls.length; i++) {
+          var p = pls[i];
+          html += '<div class="playlist-card">' +
+            '<h3>📋 ' + esc(p.name) + '</h3>' +
+            '<div class="meta">' +
+              '<span>📺 ' + (p.channelCount || 0) + ' kanal</span>' +
+              '<span>👁 ' + (p.accessCount || 0) + ' erisim</span>' +
+            '</div>' +
+            '<div class="m3u-link-box">' +
+              '<input type="text" value="' + esc(p.m3uUrl) + '" readonly onclick="this.select()">' +
+              '<button class="btn btn-sm btn-primary" onclick="copyText(\'' + esc(p.m3uUrl) + '\')">Kopyala</button>' +
+            '</div>' +
+            '<div class="actions">' +
+              '<button class="btn btn-secondary btn-sm" onclick="openEditPlaylist(\'' + p.id + '\')">Duzenle</button>' +
+              '<button class="btn btn-warning btn-sm" onclick="regenToken(\'' + p.id + '\')">Link Yenile</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="deletePl(\'' + p.id + '\')">Sil</button>' +
+            '</div>' +
+          '</div>';
+        }
+        box.innerHTML = html;
+      });
+    }
+
+    // ==================== CREATE PLAYLIST ====================
+    function renderCreateSelector() {
+      var search = (document.getElementById('createSearch').value || '').toLowerCase();
+      var cat = document.getElementById('createCatFilter').value || 'all';
+      var box = document.getElementById('createSelectorBox');
+
+      var filtered = [];
+      for (var i = 0; i < allChannels.length; i++) {
+        var ch = allChannels[i];
+        if (search && ch.name.toLowerCase().indexOf(search) === -1) continue;
+        if (cat !== 'all' && ch.group !== cat) continue;
+        filtered.push(ch);
+      }
+
+      if (filtered.length === 0) {
+        box.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">Kanal bulunamadi</div>';
+      } else {
+        var html = '';
+        for (var j = 0; j < filtered.length; j++) {
+          var c = filtered[j];
+          var checked = createSelectedIds[c.id] ? 'checked' : '';
+          html += '<label class="channel-selector-item">' +
+            '<input type="checkbox" value="' + c.id + '" ' + checked + ' onchange="toggleCreateCh(this)">' +
+            '<span class="ch-name">' + esc(c.name) + '</span>' +
+            '<span class="ch-group badge badge-info">' + esc(c.group) + '</span>' +
+          '</label>';
+        }
+        box.innerHTML = html;
+      }
+
+      var count = Object.keys(createSelectedIds).length;
+      document.getElementById('createCount').textContent = count + ' kanal secili';
+    }
+
+    function toggleCreateCh(el) {
+      if (el.checked) createSelectedIds[el.value] = true;
+      else delete createSelectedIds[el.value];
+      document.getElementById('createCount').textContent = Object.keys(createSelectedIds).length + ' kanal secili';
+    }
+
+    function createSelectAll() {
+      var boxes = document.querySelectorAll('#createSelectorBox input[type=checkbox]');
+      for (var i = 0; i < boxes.length; i++) { boxes[i].checked = true; createSelectedIds[boxes[i].value] = true; }
+      document.getElementById('createCount').textContent = Object.keys(createSelectedIds).length + ' kanal secili';
+    }
+
+    function createDeselectAll() {
+      createSelectedIds = {};
+      var boxes = document.querySelectorAll('#createSelectorBox input[type=checkbox]');
+      for (var i = 0; i < boxes.length; i++) boxes[i].checked = false;
+      document.getElementById('createCount').textContent = '0 kanal secili';
+    }
+
+    function createPlaylist() {
+      var name = document.getElementById('newPlName').value.trim();
+      if (!name) return toast('Playlist adi girin', 'warning');
+      var ids = Object.keys(createSelectedIds);
+      if (ids.length === 0) return toast('En az 1 kanal secin', 'warning');
+
+      api('POST', '/api/playlists', { name: name, channelIds: ids }, function(err, data) {
+        if (data && data.success) {
+          toast('Playlist olusturuldu!', 'success');
+          document.getElementById('newPlName').value = '';
+          createSelectedIds = {};
+          navigate('myplaylists');
+        } else {
+          toast((data && data.error) || 'Hata', 'error');
         }
       });
     }
 
-    // ==================== MY PLAYLISTS ====================
-    async function loadMyPlaylists() {
-      const res = await fetch('/api/playlists');
-      const data = await res.json();
-      
-      const grid = document.getElementById('myPlaylistsGrid');
-      
-      if (data.playlists.length === 0) {
-        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-          <div class="icon">📋</div>
-          <h3>Henüz playlist'iniz yok</h3>
-          <p>Yeni bir playlist oluşturarak IPTV kanallarınızı düzenleyin</p>
-          <button class="btn btn-primary mt-4" onclick="showSection('create')">➕ İlk Playlist'imi Oluştur</button>
-        </div>`;
-        return;
-      }
-      
-      grid.innerHTML = data.playlists.map(p => `
-        <div class="playlist-card">
-          <h3>📋 ${escHtml(p.name)}</h3>
-          <div class="meta">
-            <span>📺 ${p.channelCount} kanal</span>
-            <span>👁️ ${p.accessCount || 0} erişim</span>
-            <span>📅 ${new Date(p.createdAt).toLocaleDateString('tr')}</span>
-          </div>
-          <div class="m3u-link-box">
-            <input type="text" value="${p.m3uUrl}" readonly onclick="this.select()">
-            <button class="btn btn-sm btn-primary" onclick="copyLink('${p.m3uUrl}')">📋</button>
-          </div>
-          <div class="actions">
-            <button class="btn btn-secondary btn-sm" onclick="openEditPlaylist('${p.id}')">✏️ Düzenle</button>
-            <button class="btn btn-warning btn-sm" onclick="regenerateToken('${p.id}')">🔄 Link Yenile</button>
-            <button class="btn btn-danger btn-sm" onclick="deletePlaylist('${p.id}')">🗑️ Sil</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // ==================== CREATE PLAYLIST ====================
-    function renderChannelSelector() {
-      const search = document.getElementById('browseSearch')?.value?.toLowerCase() || '';
-      const category = document.getElementById('browseCategory')?.value || 'all';
-      
-      let channels = allChannels;
-      if (search) channels = channels.filter(c => c.name.toLowerCase().includes(search));
-      if (category !== 'all') channels = channels.filter(c => c.group === category);
-      
-      const container = document.getElementById('channelSelector');
-      container.innerHTML = channels.map(ch => `
-        <label class="channel-selector-item">
-          <input type="checkbox" value="${ch.id}" ${selectedNewIds.has(ch.id) ? 'checked' : ''} onchange="toggleNewChannel('${ch.id}')">
-          <span class="ch-name">${escHtml(ch.name)}</span>
-          <span class="ch-group badge badge-info">${escHtml(ch.group)}</span>
-        </label>
-      `).join('');
-      
-      if (channels.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding:30px"><p>Kanal bulunamadı</p></div>';
-      }
-      
-      document.getElementById('selectedCount').textContent = `${selectedNewIds.size} kanal seçili`;
-    }
-
-    function filterBrowseChannels() { renderChannelSelector(); }
-
-    function toggleNewChannel(id) {
-      if (selectedNewIds.has(id)) selectedNewIds.delete(id);
-      else selectedNewIds.add(id);
-      document.getElementById('selectedCount').textContent = `${selectedNewIds.size} kanal seçili`;
-    }
-
-    function selectAllVisible() {
-      document.querySelectorAll('#channelSelector input[type="checkbox"]').forEach(cb => {
-        cb.checked = true;
-        selectedNewIds.add(cb.value);
-      });
-      document.getElementById('selectedCount').textContent = `${selectedNewIds.size} kanal seçili`;
-    }
-
-    function deselectAll() {
-      selectedNewIds.clear();
-      document.querySelectorAll('#channelSelector input[type="checkbox"]').forEach(cb => cb.checked = false);
-      document.getElementById('selectedCount').textContent = '0 kanal seçili';
-    }
-
-    async function createPlaylist() {
-      const name = document.getElementById('newPlaylistName').value.trim();
-      if (!name) return toast('Playlist adı girin', 'warning');
-      if (selectedNewIds.size === 0) return toast('En az 1 kanal seçin', 'warning');
-      
-      const res = await fetch('/api/playlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, channelIds: Array.from(selectedNewIds) })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        toast('Playlist oluşturuldu! 🎉', 'success');
-        document.getElementById('newPlaylistName').value = '';
-        selectedNewIds.clear();
-        showSection('myplaylists');
-      } else {
-        toast(data.error, 'error');
-      }
-    }
-
     // ==================== EDIT PLAYLIST ====================
-    async function openEditPlaylist(id) {
-      const res = await fetch('/api/playlists');
-      const data = await res.json();
-      const playlist = data.playlists.find(p => p.id === id);
-      if (!playlist) return toast('Playlist bulunamadı', 'error');
-      
-      document.getElementById('editPlaylistId').value = id;
-      document.getElementById('editPlaylistName').value = playlist.name;
-      
-      editSelectedIds = new Set(playlist.channelIds);
-      renderEditChannelSelector();
-      openModal('editPlaylistModal');
-    }
+    function openEditPlaylist(id) {
+      api('GET', '/api/playlists', null, function(err, data) {
+        if (!data) return;
+        var pl = null;
+        for (var i = 0; i < data.playlists.length; i++) {
+          if (data.playlists[i].id === id) { pl = data.playlists[i]; break; }
+        }
+        if (!pl) return toast('Playlist bulunamadi', 'error');
 
-    function renderEditChannelSelector() {
-      const search = document.getElementById('editSearch')?.value?.toLowerCase() || '';
-      const category = document.getElementById('editCategory')?.value || 'all';
-      
-      let channels = allChannels;
-      if (search) channels = channels.filter(c => c.name.toLowerCase().includes(search));
-      if (category !== 'all') channels = channels.filter(c => c.group === category);
-      
-      const container = document.getElementById('editChannelSelector');
-      container.innerHTML = channels.map(ch => `
-        <label class="channel-selector-item">
-          <input type="checkbox" value="${ch.id}" ${editSelectedIds.has(ch.id) ? 'checked' : ''} onchange="toggleEditChannel('${ch.id}')">
-          <span class="ch-name">${escHtml(ch.name)}</span>
-          <span class="ch-group badge badge-info">${escHtml(ch.group)}</span>
-        </label>
-      `).join('');
-      
-      document.getElementById('editSelectedCount').textContent = `${editSelectedIds.size} seçili`;
-    }
+        document.getElementById('editPlId').value = id;
+        document.getElementById('editPlName').value = pl.name;
 
-    function filterEditChannels() { renderEditChannelSelector(); }
+        editSelectedIds = {};
+        var chIds = pl.channelIds || [];
+        for (var j = 0; j < chIds.length; j++) editSelectedIds[chIds[j]] = true;
 
-    function toggleEditChannel(id) {
-      if (editSelectedIds.has(id)) editSelectedIds.delete(id);
-      else editSelectedIds.add(id);
-      document.getElementById('editSelectedCount').textContent = `${editSelectedIds.size} seçili`;
-    }
-
-    function editSelectAllVisible() {
-      document.querySelectorAll('#editChannelSelector input[type="checkbox"]').forEach(cb => {
-        cb.checked = true;
-        editSelectedIds.add(cb.value);
+        renderEditSelector();
+        document.getElementById('editModal').classList.add('active');
       });
-      document.getElementById('editSelectedCount').textContent = `${editSelectedIds.size} seçili`;
+    }
+
+    function renderEditSelector() {
+      var search = (document.getElementById('editSearch').value || '').toLowerCase();
+      var cat = document.getElementById('editCatFilter').value || 'all';
+      var box = document.getElementById('editSelectorBox');
+
+      var filtered = [];
+      for (var i = 0; i < allChannels.length; i++) {
+        var ch = allChannels[i];
+        if (search && ch.name.toLowerCase().indexOf(search) === -1) continue;
+        if (cat !== 'all' && ch.group !== cat) continue;
+        filtered.push(ch);
+      }
+
+      var html = '';
+      for (var j = 0; j < filtered.length; j++) {
+        var c = filtered[j];
+        var checked = editSelectedIds[c.id] ? 'checked' : '';
+        html += '<label class="channel-selector-item">' +
+          '<input type="checkbox" value="' + c.id + '" ' + checked + ' onchange="toggleEditCh(this)">' +
+          '<span class="ch-name">' + esc(c.name) + '</span>' +
+          '<span class="ch-group badge badge-info">' + esc(c.group) + '</span>' +
+        '</label>';
+      }
+      box.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text-muted)">Kanal bulunamadi</div>';
+      document.getElementById('editCount').textContent = Object.keys(editSelectedIds).length + ' secili';
+    }
+
+    function toggleEditCh(el) {
+      if (el.checked) editSelectedIds[el.value] = true;
+      else delete editSelectedIds[el.value];
+      document.getElementById('editCount').textContent = Object.keys(editSelectedIds).length + ' secili';
+    }
+
+    function editSelectAll() {
+      var boxes = document.querySelectorAll('#editSelectorBox input[type=checkbox]');
+      for (var i = 0; i < boxes.length; i++) { boxes[i].checked = true; editSelectedIds[boxes[i].value] = true; }
+      document.getElementById('editCount').textContent = Object.keys(editSelectedIds).length + ' secili';
     }
 
     function editDeselectAll() {
-      editSelectedIds.clear();
-      document.querySelectorAll('#editChannelSelector input[type="checkbox"]').forEach(cb => cb.checked = false);
-      document.getElementById('editSelectedCount').textContent = '0 seçili';
+      editSelectedIds = {};
+      var boxes = document.querySelectorAll('#editSelectorBox input[type=checkbox]');
+      for (var i = 0; i < boxes.length; i++) boxes[i].checked = false;
+      document.getElementById('editCount').textContent = '0 secili';
     }
 
-    async function updatePlaylist() {
-      const id = document.getElementById('editPlaylistId').value;
-      const name = document.getElementById('editPlaylistName').value.trim();
-      
-      if (!name) return toast('Playlist adı girin', 'warning');
-      
-      const res = await fetch(`/api/playlists/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, channelIds: Array.from(editSelectedIds) })
+    function saveEditPlaylist() {
+      var id = document.getElementById('editPlId').value;
+      var name = document.getElementById('editPlName').value.trim();
+      if (!name) return toast('Ad girin', 'warning');
+
+      api('PUT', '/api/playlists/' + id, { name: name, channelIds: Object.keys(editSelectedIds) }, function(err, data) {
+        if (data && data.success) {
+          toast('Playlist guncellendi', 'success');
+          document.getElementById('editModal').classList.remove('active');
+          loadMyPlaylists();
+        } else {
+          toast((data && data.error) || 'Hata', 'error');
+        }
       });
-      const data = await res.json();
-      
-      if (data.success) {
-        toast('Playlist güncellendi', 'success');
-        closeModal('editPlaylistModal');
-        loadMyPlaylists();
-      } else {
-        toast(data.error, 'error');
-      }
     }
 
-    // ==================== OTHER PLAYLIST ACTIONS ====================
-    async function regenerateToken(id) {
-      if (!confirm('Link yenilenecek. Eski link artık çalışmaz. Devam?')) return;
-      const res = await fetch(`/api/playlists/${id}/regenerate-token`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        toast('Yeni link oluşturuldu', 'success');
-        loadMyPlaylists();
-      }
+    function regenToken(id) {
+      if (!confirm('Link yenilenecek. Eski link calismaz. Devam?')) return;
+      api('POST', '/api/playlists/' + id + '/regenerate-token', null, function(err, data) {
+        if (data && data.success) { toast('Link yenilendi', 'success'); loadMyPlaylists(); }
+      });
     }
 
-    async function deletePlaylist(id) {
-      if (!confirm('Bu playlist silinecek. Emin misiniz?')) return;
-      const res = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        toast('Playlist silindi', 'success');
-        loadMyPlaylists();
-      }
+    function deletePl(id) {
+      if (!confirm('Playlist silinecek?')) return;
+      api('DELETE', '/api/playlists/' + id, null, function(err, data) {
+        if (data && data.success) { toast('Silindi', 'success'); loadMyPlaylists(); }
+      });
     }
 
-    // ==================== BROWSE CHANNELS ====================
-    async function loadBrowseChannels() {
-      const search = document.getElementById('browseSearch2')?.value || '';
-      const category = document.getElementById('browseCategory2')?.value || 'all';
-      
-      const res = await fetch(`/api/channels?search=${encodeURIComponent(search)}&category=${category}&page=${browsePage}&limit=50`);
-      const data = await res.json();
-      
-      const tbody = document.getElementById('browseTable');
-      tbody.innerHTML = data.channels.map(ch => `
-        <tr>
-          <td>
-            <div class="channel-info">
-              ${ch.logo ? `<img src="${ch.logo}" class="channel-logo" onerror="this.style.display='none'">` : `<div class="channel-logo-placeholder">${ch.name[0]}</div>`}
-              <strong>${escHtml(ch.name)}</strong>
-            </div>
-          </td>
-          <td><span class="badge badge-info">${escHtml(ch.group)}</span></td>
-          <td><span class="badge badge-success">Aktif</span></td>
-        </tr>
-      `).join('');
-      
-      if (data.channels.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="padding:40px;color:var(--text-muted)">Kanal bulunamadı</td></tr>';
+    // ==================== BROWSE ====================
+    function loadBrowse() {
+      var search = (document.getElementById('browseSearch').value || '').toLowerCase();
+      var cat = document.getElementById('browseCatFilter').value || 'all';
+
+      var filtered = [];
+      for (var i = 0; i < allChannels.length; i++) {
+        var ch = allChannels[i];
+        if (search && ch.name.toLowerCase().indexOf(search) === -1) continue;
+        if (cat !== 'all' && ch.group !== cat) continue;
+        filtered.push(ch);
       }
+
+      var html = '';
+      for (var j = 0; j < filtered.length; j++) {
+        var c = filtered[j];
+        html += '<tr>' +
+          '<td><div class="channel-info"><div class="channel-logo-placeholder">' + esc(c.name[0]) + '</div><strong>' + esc(c.name) + '</strong></div></td>' +
+          '<td><span class="badge badge-info">' + esc(c.group) + '</span></td>' +
+        '</tr>';
+      }
+
+      document.getElementById('browseTableBody').innerHTML = html || '<tr><td colspan="2" style="text-align:center;padding:30px;color:var(--text-muted)">Kanal bulunamadi</td></tr>';
+    }
+
+    // ==================== LOGOUT ====================
+    function doLogout() {
+      document.cookie = 'token=; path=/; max-age=0';
+      window.location.href = '/';
     }
 
     // ==================== EVENTS ====================
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('active');
-      });
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active');
     });
-
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+        var m = document.querySelectorAll('.modal-overlay.active');
+        for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
       }
     });
 
-    init();
+    // ==================== START ====================
+    initApp();
   </script>
 </body>
 </html>
