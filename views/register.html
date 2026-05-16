@@ -3,106 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPTV Panel - Kayıt</title>
+  <title>IPTV Panel - Kayit</title>
   <link rel="stylesheet" href="/css/style.css">
-<script src="/js/app.js"></script>
 </head>
 <body>
   <div class="login-container">
     <div class="login-box">
       <div class="login-logo">📺</div>
-      <h1>Kayıt Ol</h1>
-      <p class="subtitle">Yeni hesap oluşturun ve playlist'lerinizi yönetin</p>
-      
-      <div id="regMsg" class="hidden" style="padding:10px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center;"></div>
-      
+      <h1>Kayit Ol</h1>
+      <p class="subtitle">Yeni hesap olusturun</p>
+
+      <div id="regMsg" style="display:none;padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center;"></div>
+
       <form id="registerForm">
         <div class="form-group">
-          <label>👤 Kullanıcı Adı</label>
-          <input type="text" id="username" placeholder="En az 3 karakter" required minlength="3">
+          <label>Kullanici Adi (en az 3 karakter)</label>
+          <input type="text" id="username" required minlength="3">
         </div>
         <div class="form-group">
-          <label>📧 Email</label>
-          <input type="email" id="email" placeholder="ornek@email.com" required>
+          <label>Email</label>
+          <input type="email" id="email" required>
         </div>
         <div class="form-group">
-          <label>🔒 Şifre</label>
-          <input type="password" id="password" placeholder="En az 6 karakter" required minlength="6">
+          <label>Sifre (en az 6 karakter)</label>
+          <input type="password" id="password" required minlength="6">
         </div>
         <div class="form-group">
-          <label>🔒 Şifre Tekrar</label>
-          <input type="password" id="password2" placeholder="Şifrenizi tekrar girin" required>
+          <label>Sifre Tekrar</label>
+          <input type="password" id="password2" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-full">
-          ✨ Kayıt Ol
-        </button>
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="regBtn">Kayit Ol</button>
       </form>
-      
+
       <div class="text-center mt-4">
-        <a href="/" class="link-text">← Giriş sayfasına dön</a>
+        <a href="/" class="link-text">Giris sayfasina don</a>
       </div>
     </div>
   </div>
 
   <script>
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msgDiv = document.getElementById('regMsg');
-      msgDiv.classList.add('hidden');
-      
-      const password = document.getElementById('password').value;
-      const password2 = document.getElementById('password2').value;
-      
-      if (password !== password2) {
+    var regForm = document.getElementById('registerForm');
+    var msgDiv = document.getElementById('regMsg');
+    var regBtn = document.getElementById('regBtn');
+
+    function showMsg(text, isError) {
+      msgDiv.style.display = 'block';
+      msgDiv.textContent = text;
+      if (isError) {
         msgDiv.style.background = 'rgba(239,68,68,0.1)';
-        msgDiv.style.border = '1px solid var(--danger)';
-        msgDiv.style.color = 'var(--danger)';
-        msgDiv.textContent = 'Şifreler eşleşmiyor!';
-        msgDiv.classList.remove('hidden');
+        msgDiv.style.border = '1px solid #ef4444';
+        msgDiv.style.color = '#ef4444';
+      } else {
+        msgDiv.style.background = 'rgba(34,197,94,0.1)';
+        msgDiv.style.border = '1px solid #22c55e';
+        msgDiv.style.color = '#22c55e';
+      }
+    }
+
+    regForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      msgDiv.style.display = 'none';
+
+      var password = document.getElementById('password').value;
+      var password2 = document.getElementById('password2').value;
+
+      if (password !== password2) {
+        showMsg('Sifreler eslesmiyor!', true);
         return;
       }
-      
-      const btn = e.target.querySelector('button');
-      btn.disabled = true;
-      btn.textContent = '⏳ Kayıt yapılıyor...';
-      
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: document.getElementById('username').value,
-            email: document.getElementById('email').value,
-            password
-          })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          msgDiv.style.background = 'rgba(34,197,94,0.1)';
-          msgDiv.style.border = '1px solid var(--success)';
-          msgDiv.style.color = 'var(--success)';
-          msgDiv.textContent = data.message + ' Yönlendiriliyorsunuz...';
-          msgDiv.classList.remove('hidden');
-          setTimeout(() => window.location.href = '/', 2000);
-        } else {
-          msgDiv.style.background = 'rgba(239,68,68,0.1)';
-          msgDiv.style.border = '1px solid var(--danger)';
-          msgDiv.style.color = 'var(--danger)';
-          msgDiv.textContent = data.error;
-          msgDiv.classList.remove('hidden');
+
+      regBtn.disabled = true;
+      regBtn.textContent = 'Kayit yapiliyor...';
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/auth/register', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          regBtn.disabled = false;
+          regBtn.textContent = 'Kayit Ol';
+
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.success) {
+              showMsg('Kayit basarili! Giris sayfasina yonlendiriliyorsunuz...', false);
+              setTimeout(function() { window.location.href = '/'; }, 2000);
+            } else {
+              showMsg(data.error || 'Kayit basarisiz', true);
+            }
+          } catch (err) {
+            showMsg('Sunucu hatasi', true);
+          }
         }
-      } catch (err) {
-        msgDiv.style.background = 'rgba(239,68,68,0.1)';
-        msgDiv.style.border = '1px solid var(--danger)';
-        msgDiv.style.color = 'var(--danger)';
-        msgDiv.textContent = 'Bağlantı hatası!';
-        msgDiv.classList.remove('hidden');
-      }
-      
-      btn.disabled = false;
-      btn.textContent = '✨ Kayıt Ol';
+      };
+
+      xhr.send(JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: password
+      }));
     });
   </script>
 </body>
