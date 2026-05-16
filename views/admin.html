@@ -5,212 +5,192 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IPTV Panel - Admin</title>
   <link rel="stylesheet" href="/css/style.css">
-  <script src="/js/app.js"></script>
 </head>
 <body>
-  <div id="app" class="app-container">
-    <!-- Mobile Toggle -->
-    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <div class="app-container">
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <h2>📺 IPTV Panel</h2>
-        <span>Admin Yönetim</span>
+        <span>Admin Yonetim</span>
       </div>
       <ul class="sidebar-menu">
-        <li><a href="#" onclick="showSection('dashboard')" class="active" data-section="dashboard"><span class="icon">📊</span> Dashboard</a></li>
-        <li><a href="#" onclick="showSection('channels')" data-section="channels"><span class="icon">📺</span> Kanallar</a></li>
-        <li><a href="#" onclick="showSection('import')" data-section="import"><span class="icon">📥</span> M3U Import</a></li>
-        <li><a href="#" onclick="showSection('categories')" data-section="categories"><span class="icon">📂</span> Kategoriler</a></li>
-        <li><a href="#" onclick="showSection('users')" data-section="users"><span class="icon">👥</span> Kullanıcılar</a></li>
-        <li><a href="#" onclick="showSection('playlists')" data-section="playlists"><span class="icon">📋</span> Tüm Playlist'ler</a></li>
+        <li><a href="#" data-section="dashboard" class="active" onclick="navigate('dashboard')">📊 Dashboard</a></li>
+        <li><a href="#" data-section="channels" onclick="navigate('channels')">📺 Kanallar</a></li>
+        <li><a href="#" data-section="import" onclick="navigate('import')">📥 M3U Import</a></li>
+        <li><a href="#" data-section="categories" onclick="navigate('categories')">📂 Kategoriler</a></li>
+        <li><a href="#" data-section="users" onclick="navigate('users')">👥 Kullanicilar</a></li>
+        <li><a href="#" data-section="playlists" onclick="navigate('playlists')">📋 Playlistler</a></li>
       </ul>
       <div class="sidebar-footer">
         <div class="user-info">
-          <div class="avatar" id="adminAvatar">A</div>
+          <div class="avatar" id="avatarEl">A</div>
           <div>
-            <div style="font-size:14px;font-weight:600" id="adminName">Admin</div>
-            <div style="font-size:12px;color:var(--text-muted)">Yönetici</div>
+            <div style="font-size:14px;font-weight:600" id="nameEl">Admin</div>
+            <div style="font-size:12px;color:var(--text-muted)">Yonetici</div>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm btn-full" onclick="logout()">🚪 Çıkış Yap</button>
+        <button class="btn btn-secondary btn-sm btn-full" onclick="doLogout()">Cikis Yap</button>
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
-      
-      <!-- DASHBOARD -->
-      <div id="section-dashboard" class="section active">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div id="sec-dashboard" class="section">
         <div class="page-header">
           <h1>📊 Dashboard</h1>
-          <button class="btn btn-primary btn-sm" onclick="loadStats()">🔄 Yenile</button>
+          <button class="btn btn-primary btn-sm" onclick="loadDashboard()">Yenile</button>
         </div>
-        <div class="stats-grid" id="statsGrid">
+        <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon purple">📺</div>
-            <div class="stat-info"><h3 id="statChannels">-</h3><p>Toplam Kanal</p></div>
+            <div class="stat-info"><h3 id="s1">0</h3><p>Toplam Kanal</p></div>
           </div>
           <div class="stat-card">
             <div class="stat-icon green">✅</div>
-            <div class="stat-info"><h3 id="statActive">-</h3><p>Aktif Kanal</p></div>
+            <div class="stat-info"><h3 id="s2">0</h3><p>Aktif Kanal</p></div>
           </div>
           <div class="stat-card">
             <div class="stat-icon blue">👥</div>
-            <div class="stat-info"><h3 id="statUsers">-</h3><p>Kullanıcı</p></div>
+            <div class="stat-info"><h3 id="s3">0</h3><p>Kullanici</p></div>
           </div>
           <div class="stat-card">
             <div class="stat-icon orange">📋</div>
-            <div class="stat-info"><h3 id="statPlaylists">-</h3><p>Playlist</p></div>
+            <div class="stat-info"><h3 id="s4">0</h3><p>Playlist</p></div>
           </div>
         </div>
-        
         <div class="card">
-          <div class="card-header"><h2>📂 Kategori Dağılımı</h2></div>
-          <div class="card-body" id="categoryStats"></div>
+          <div class="card-header"><h2>Kategori Dagilimi</h2></div>
+          <div class="card-body" id="catStatsBox"></div>
         </div>
       </div>
 
-      <!-- CHANNELS -->
-      <div id="section-channels" class="section" style="display:none">
+      <!-- ===== CHANNELS ===== -->
+      <div id="sec-channels" class="section" style="display:none">
         <div class="page-header">
-          <h1>📺 Kanal Yönetimi</h1>
+          <h1>📺 Kanal Yonetimi</h1>
           <div class="btn-group">
-            <button class="btn btn-primary" onclick="openAddChannelModal()">➕ Kanal Ekle</button>
-            <a href="/api/channels/export/m3u" class="btn btn-success" id="exportBtn">📤 M3U Export</a>
+            <button class="btn btn-primary" onclick="openAddChannel()">Kanal Ekle</button>
+            <button class="btn btn-success" onclick="exportChannels()">M3U Export</button>
           </div>
         </div>
-        
+
         <div class="search-bar">
-          <input type="text" id="channelSearch" placeholder="🔍 Kanal ara..." oninput="searchChannels()">
-          <select id="channelCategoryFilter" onchange="searchChannels()">
-            <option value="all">Tüm Kategoriler</option>
+          <input type="text" id="chSearchInput" placeholder="Kanal ara..." oninput="debouncedSearch()">
+          <select id="chCatFilter" onchange="chPage=1;loadChannels()">
+            <option value="all">Tum Kategoriler</option>
           </select>
-          <button class="btn btn-danger btn-sm" onclick="deleteSelectedChannels()">🗑️ Seçilenleri Sil</button>
+          <button class="btn btn-danger btn-sm" onclick="bulkDeleteChannels()">Secilenleri Sil</button>
         </div>
-        
+
         <div class="card">
           <div class="table-container">
             <table>
               <thead>
                 <tr>
-                  <th><input type="checkbox" id="selectAllChannels" onchange="toggleSelectAll()"></th>
+                  <th><input type="checkbox" id="chSelectAll" onchange="toggleAllCh()"></th>
                   <th>Kanal</th>
                   <th>Kategori</th>
                   <th>Durum</th>
-                  <th>Tarih</th>
-                  <th>İşlemler</th>
+                  <th>Islemler</th>
                 </tr>
               </thead>
-              <tbody id="channelsTable"></tbody>
+              <tbody id="chTableBody"></tbody>
             </table>
           </div>
-          <div class="pagination" id="channelsPagination"></div>
+          <div class="pagination" id="chPagination"></div>
         </div>
       </div>
 
-      <!-- IMPORT -->
-      <div id="section-import" class="section" style="display:none">
-        <div class="page-header">
-          <h1>📥 M3U Import</h1>
-        </div>
-        
+      <!-- ===== IMPORT ===== -->
+      <div id="sec-import" class="section" style="display:none">
+        <div class="page-header"><h1>📥 M3U Import</h1></div>
+
         <div class="card">
-          <div class="card-header"><h2>📁 Dosya Yükle</h2></div>
+          <div class="card-header"><h2>Dosya Yukle</h2></div>
           <div class="card-body">
-            <div class="file-upload" onclick="document.getElementById('m3uFileInput').click()" id="dropZone">
+            <div class="file-upload" onclick="document.getElementById('m3uFile').click()" id="dropArea">
               <div class="icon">📁</div>
-              <p><strong>M3U/M3U8 dosyasını sürükleyin</strong> veya tıklayarak seçin</p>
-              <p style="font-size:12px;margin-top:8px">Maksimum 50MB</p>
-              <input type="file" id="m3uFileInput" accept=".m3u,.m3u8,.txt" onchange="handleFileSelect(this)">
+              <p><strong>M3U dosyasini secin veya surukleyin</strong></p>
+              <p style="font-size:12px;margin-top:4px">Maks 50MB - .m3u .m3u8 .txt</p>
+              <input type="file" id="m3uFile" accept=".m3u,.m3u8,.txt" style="display:none" onchange="onFileSelected()">
             </div>
-            <div id="fileInfo" class="hidden mt-4" style="padding:12px;background:rgba(99,102,241,0.1);border-radius:8px;">
-              <span id="fileName"></span>
-            </div>
-            <div class="mt-4">
-              <button class="btn btn-primary btn-lg" onclick="importM3U()" id="importBtn" disabled>
-                📥 Import Et
-              </button>
-            </div>
-            <div id="importResult" class="hidden mt-4" style="padding:16px;border-radius:8px;"></div>
+            <div id="fileNameBox" style="display:none;margin-top:12px;padding:10px;background:rgba(99,102,241,0.1);border-radius:8px;"></div>
+            <button class="btn btn-primary btn-lg mt-4" id="importFileBtn" onclick="doImportFile()" disabled>Import Et</button>
+            <div id="importResult" style="display:none;margin-top:12px;padding:12px;border-radius:8px;"></div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-header"><h2>📝 M3U İçerik Yapıştır</h2></div>
+          <div class="card-header"><h2>M3U Icerik Yapistir</h2></div>
           <div class="card-body">
             <div class="form-group">
-              <textarea id="m3uContent" placeholder="#EXTM3U
-#EXTINF:-1 group-title=&quot;Spor&quot; tvg-logo=&quot;logo.png&quot;,Kanal Adı
-http://stream-url.com/live/stream.m3u8"></textarea>
+              <textarea id="m3uTextarea" placeholder="#EXTM3U
+#EXTINF:-1 group-title=&quot;Spor&quot;,Kanal Adi
+http://example.com/stream.m3u8" rows="8"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="importM3UContent()">📥 İçeriği Import Et</button>
+            <button class="btn btn-primary" onclick="doImportText()">Icerigi Import Et</button>
           </div>
         </div>
       </div>
 
-      <!-- CATEGORIES -->
-      <div id="section-categories" class="section" style="display:none">
-        <div class="page-header">
-          <h1>📂 Kategori Yönetimi</h1>
-        </div>
+      <!-- ===== CATEGORIES ===== -->
+      <div id="sec-categories" class="section" style="display:none">
+        <div class="page-header"><h1>📂 Kategoriler</h1></div>
         <div class="card">
           <div class="card-header">
-            <h2>Kategoriler</h2>
+            <h2>Kategori Listesi</h2>
             <div class="flex gap-2">
-              <input type="text" id="newCategory" placeholder="Yeni kategori..." style="padding:8px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:14px;">
-              <button class="btn btn-primary btn-sm" onclick="addCategory()">➕ Ekle</button>
+              <input type="text" id="newCatInput" placeholder="Yeni kategori..."
+                style="padding:8px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);">
+              <button class="btn btn-primary btn-sm" onclick="addCategory()">Ekle</button>
             </div>
           </div>
-          <div class="card-body" id="categoriesList"></div>
+          <div class="card-body" id="catListBox"></div>
         </div>
       </div>
 
-      <!-- USERS -->
-      <div id="section-users" class="section" style="display:none">
-        <div class="page-header">
-          <h1>👥 Kullanıcı Yönetimi</h1>
-        </div>
+      <!-- ===== USERS ===== -->
+      <div id="sec-users" class="section" style="display:none">
+        <div class="page-header"><h1>👥 Kullanicilar</h1></div>
         <div class="card">
           <div class="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Kullanıcı</th>
+                  <th>Kullanici</th>
                   <th>Email</th>
                   <th>Rol</th>
                   <th>Durum</th>
                   <th>Playlist</th>
-                  <th>Kayıt Tarihi</th>
-                  <th>İşlemler</th>
+                  <th>Tarih</th>
+                  <th>Islem</th>
                 </tr>
               </thead>
-              <tbody id="usersTable"></tbody>
+              <tbody id="usersTableBody"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- ALL PLAYLISTS -->
-      <div id="section-playlists" class="section" style="display:none">
-        <div class="page-header">
-          <h1>📋 Tüm Playlist'ler</h1>
-        </div>
+      <!-- ===== PLAYLISTS ===== -->
+      <div id="sec-playlists" class="section" style="display:none">
+        <div class="page-header"><h1>📋 Tum Playlistler</h1></div>
         <div class="card">
           <div class="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Playlist</th>
-                  <th>Kullanıcı</th>
-                  <th>Kanal Sayısı</th>
-                  <th>Erişim</th>
-                  <th>Oluşturulma</th>
+                  <th>Kullanici</th>
+                  <th>Kanal</th>
+                  <th>Erisim</th>
                   <th>M3U Link</th>
                 </tr>
               </thead>
-              <tbody id="allPlaylistsTable"></tbody>
+              <tbody id="playlistsTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -219,524 +199,641 @@ http://stream-url.com/live/stream.m3u8"></textarea>
     </main>
   </div>
 
-  <!-- Add/Edit Channel Modal -->
-  <div class="modal-overlay" id="channelModal">
+  <!-- Channel Modal -->
+  <div class="modal-overlay" id="chModal">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="channelModalTitle">Kanal Ekle</h2>
-        <button class="modal-close" onclick="closeModal('channelModal')">&times;</button>
+        <h2 id="chModalTitle">Kanal Ekle</h2>
+        <button class="modal-close" onclick="closeChModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <input type="hidden" id="editChannelId">
+        <input type="hidden" id="editChId">
         <div class="form-group">
-          <label>Kanal Adı *</label>
-          <input type="text" id="chName" placeholder="Örn: TRT 1 HD">
+          <label>Kanal Adi *</label>
+          <input type="text" id="chNameInput" placeholder="TRT 1 HD">
         </div>
         <div class="form-group">
           <label>Stream URL *</label>
-          <input type="text" id="chUrl" placeholder="http://stream.example.com/live.m3u8">
+          <input type="text" id="chUrlInput" placeholder="http://example.com/live.m3u8">
         </div>
         <div class="form-group">
           <label>Logo URL</label>
-          <input type="text" id="chLogo" placeholder="https://example.com/logo.png">
+          <input type="text" id="chLogoInput" placeholder="https://example.com/logo.png">
         </div>
         <div class="form-group">
           <label>Kategori</label>
-          <select id="chGroup"></select>
+          <select id="chGroupSelect"></select>
         </div>
         <div class="form-group">
           <label>EPG ID</label>
-          <input type="text" id="chEpgId" placeholder="trt1.tr">
+          <input type="text" id="chEpgInput" placeholder="trt1.tr">
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('channelModal')">İptal</button>
-        <button class="btn btn-primary" onclick="saveChannel()">💾 Kaydet</button>
+        <button class="btn btn-secondary" onclick="closeChModal()">Iptal</button>
+        <button class="btn btn-primary" onclick="saveChannel()">Kaydet</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- Toast -->
+  <div class="toast-container" id="toasts"></div>
 
   <script>
-    let currentUser = null;
-    let currentPage = 1;
-    let selectedFile = null;
-    let selectedChannelIds = new Set();
+    // ==================== GLOBALS ====================
+    var TOKEN = '';
+    var USER = null;
+    var chPage = 1;
+    var selectedChIds = [];
+    var searchTimer = null;
 
-    // ==================== INIT ====================
-    async function init() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (!data.user || data.user.role !== 'admin') {
-          window.location.href = data.user ? '/dashboard' : '/';
+    // ==================== HELPERS ====================
+    function getCookie(name) {
+      var parts = document.cookie.split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].trim();
+        if (c.indexOf(name + '=') === 0) return c.substring(name.length + 1);
+      }
+      return '';
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function toast(msg, type) {
+      var box = document.getElementById('toasts');
+      var el = document.createElement('div');
+      el.className = 'toast toast-' + (type || 'info');
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(function() { el.remove(); }, 4000);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() { toast('Kopyalandi!', 'success'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Kopyalandi!', 'success');
+      }
+    }
+
+    // ==================== API ====================
+    function api(method, url, body, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+
+      if (TOKEN) xhr.setRequestHeader('Authorization', 'Bearer ' + TOKEN);
+
+      if (body && !(body instanceof FormData)) {
+        xhr.setRequestHeader('Content-Type', 'application/json');
+      }
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            callback(null, data, xhr.status);
+          } catch (e) {
+            callback('Parse hatasi', null, xhr.status);
+          }
+        }
+      };
+
+      xhr.onerror = function() { callback('Baglanti hatasi', null, 0); };
+
+      if (body instanceof FormData) {
+        xhr.send(body);
+      } else if (body) {
+        xhr.send(JSON.stringify(body));
+      } else {
+        xhr.send();
+      }
+    }
+
+    // ==================== AUTH CHECK ====================
+    function initApp() {
+      TOKEN = getCookie('token');
+      console.log('Token:', TOKEN ? 'var (' + TOKEN.substring(0, 20) + '...)' : 'yok');
+
+      if (!TOKEN) {
+        console.log('Token yok, login sayfasina yonlendiriliyor');
+        window.location.href = '/';
+        return;
+      }
+
+      api('GET', '/api/auth/me', null, function(err, data, status) {
+        console.log('Auth kontrol:', status, data);
+
+        if (err || !data || !data.user) {
+          console.log('Auth basarisiz, login sayfasina yonlendiriliyor');
+          window.location.href = '/';
           return;
         }
-        currentUser = data.user;
-        document.getElementById('adminName').textContent = currentUser.username;
-        document.getElementById('adminAvatar').textContent = currentUser.username[0].toUpperCase();
-        
-        loadStats();
-        loadCategories();
-      } catch {
-        window.location.href = '/';
-      }
+
+        if (data.user.role !== 'admin') {
+          window.location.href = '/dashboard';
+          return;
+        }
+
+        USER = data.user;
+        document.getElementById('nameEl').textContent = USER.username;
+        document.getElementById('avatarEl').textContent = USER.username[0].toUpperCase();
+
+        loadDashboard();
+        loadCategoryFilter();
+      });
     }
 
     // ==================== NAVIGATION ====================
-    function showSection(name) {
-      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-      document.getElementById('section-' + name).style.display = 'block';
-      
-      document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
-      document.querySelector(`[data-section="${name}"]`).classList.add('active');
-      
-      document.querySelector('.sidebar').classList.remove('open');
-      
-      if (name === 'dashboard') loadStats();
-      if (name === 'channels') { currentPage = 1; loadChannels(); }
-      if (name === 'categories') loadCategoriesList();
-      if (name === 'users') loadUsers();
-      if (name === 'playlists') loadAllPlaylists();
+    function navigate(section) {
+      // Hide all
+      var sections = document.querySelectorAll('.section');
+      for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+
+      // Show target
+      var target = document.getElementById('sec-' + section);
+      if (target) target.style.display = 'block';
+
+      // Menu active
+      var links = document.querySelectorAll('.sidebar-menu a');
+      for (var j = 0; j < links.length; j++) links[j].classList.remove('active');
+      var activeLink = document.querySelector('[data-section="' + section + '"]');
+      if (activeLink) activeLink.classList.add('active');
+
+      // Close mobile sidebar
+      document.getElementById('sidebar').classList.remove('open');
+
+      // Load data
+      if (section === 'dashboard') loadDashboard();
+      if (section === 'channels') { chPage = 1; loadChannels(); }
+      if (section === 'categories') loadCategoryList();
+      if (section === 'users') loadUsers();
+      if (section === 'playlists') loadPlaylists();
+
+      return false;
     }
 
-    // ==================== API HELPER ====================
-    async function api(url, options = {}) {
-      const res = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // ==================== DASHBOARD ====================
+    function loadDashboard() {
+      api('GET', '/api/stats', null, function(err, data) {
+        if (err || !data) return;
+        document.getElementById('s1').textContent = data.totalChannels || 0;
+        document.getElementById('s2').textContent = data.activeChannels || 0;
+        document.getElementById('s3').textContent = data.totalUsers || 0;
+        document.getElementById('s4').textContent = data.totalPlaylists || 0;
+
+        var catHtml = '';
+        var stats = data.categoryStats || {};
+        var keys = Object.keys(stats);
+        if (keys.length === 0) {
+          catHtml = '<p style="color:var(--text-muted);text-align:center">Henuz kanal yok</p>';
+        } else {
+          catHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
+          for (var k = 0; k < keys.length; k++) {
+            catHtml += '<div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--bg-dark);border-radius:8px;">' +
+              '<span>' + esc(keys[k]) + '</span><span class="badge badge-primary">' + stats[keys[k]] + '</span></div>';
+          }
+          catHtml += '</div>';
         }
+        document.getElementById('catStatsBox').innerHTML = catHtml;
       });
-      return await res.json();
-    }
-
-    // ==================== TOAST ====================
-    function toast(msg, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const t = document.createElement('div');
-      t.className = `toast toast-${type}`;
-      const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-      t.innerHTML = `${icons[type] || ''} ${msg}`;
-      container.appendChild(t);
-      setTimeout(() => t.remove(), 4000);
-    }
-
-    // ==================== STATS ====================
-    async function loadStats() {
-      const data = await api('/api/stats');
-      document.getElementById('statChannels').textContent = data.totalChannels;
-      document.getElementById('statActive').textContent = data.activeChannels;
-      document.getElementById('statUsers').textContent = data.totalUsers;
-      document.getElementById('statPlaylists').textContent = data.totalPlaylists;
-      
-      let catHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
-      Object.entries(data.categoryStats || {}).forEach(([cat, count]) => {
-        catHtml += `<div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--bg-dark);border-radius:8px;">
-          <span>${cat}</span><span class="badge badge-primary">${count}</span>
-        </div>`;
-      });
-      catHtml += '</div>';
-      document.getElementById('categoryStats').innerHTML = catHtml || '<p class="text-center" style="color:var(--text-muted)">Henüz kanal yok</p>';
     }
 
     // ==================== CHANNELS ====================
-    async function loadChannels() {
-      const search = document.getElementById('channelSearch')?.value || '';
-      const category = document.getElementById('channelCategoryFilter')?.value || 'all';
-      
-      const data = await api(`/api/channels?search=${encodeURIComponent(search)}&category=${category}&page=${currentPage}&limit=30`);
-      
-      const tbody = document.getElementById('channelsTable');
-      if (data.channels.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📺</div><h3>Kanal bulunamadı</h3><p>Yeni kanal ekleyin veya M3U dosyası import edin</p></div></td></tr>`;
-      } else {
-        tbody.innerHTML = data.channels.map(ch => `
-          <tr>
-            <td><input type="checkbox" value="${ch.id}" onchange="toggleChannelSelect('${ch.id}')" ${selectedChannelIds.has(ch.id) ? 'checked' : ''}></td>
-            <td>
-              <div class="channel-info">
-                ${ch.logo ? `<img src="${ch.logo}" class="channel-logo" onerror="this.style.display='none'">` : `<div class="channel-logo-placeholder">${ch.name[0]}</div>`}
-                <div>
-                  <div style="font-weight:600">${escHtml(ch.name)}</div>
-                  <div class="truncate" style="font-size:11px;color:var(--text-muted)" title="${escHtml(ch.url)}">${escHtml(ch.url)}</div>
-                </div>
-              </div>
-            </td>
-            <td><span class="badge badge-info">${escHtml(ch.group)}</span></td>
-            <td><span class="badge ${ch.isActive ? 'badge-success' : 'badge-danger'}">${ch.isActive ? 'Aktif' : 'Pasif'}</span></td>
-            <td style="font-size:12px;color:var(--text-muted)">${new Date(ch.createdAt).toLocaleDateString('tr')}</td>
-            <td>
-              <div class="btn-group">
-                <button class="btn btn-secondary btn-sm" onclick="editChannel('${ch.id}')">✏️</button>
-                <button class="btn btn-${ch.isActive ? 'warning' : 'success'} btn-sm" onclick="toggleChannel('${ch.id}', ${!ch.isActive})">${ch.isActive ? '⏸️' : '▶️'}</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteChannel('${ch.id}')">🗑️</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      }
-      
-      // Pagination
-      const pagDiv = document.getElementById('channelsPagination');
-      if (data.totalPages > 1) {
-        let pagHtml = `<button ${currentPage <= 1 ? 'disabled' : ''} onclick="currentPage--;loadChannels()">◀</button>`;
-        for (let i = 1; i <= data.totalPages; i++) {
-          if (i === 1 || i === data.totalPages || Math.abs(i - currentPage) <= 2) {
-            pagHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="currentPage=${i};loadChannels()">${i}</button>`;
-          } else if (Math.abs(i - currentPage) === 3) {
-            pagHtml += `<span style="color:var(--text-muted)">...</span>`;
+    function loadChannels() {
+      var search = document.getElementById('chSearchInput').value || '';
+      var cat = document.getElementById('chCatFilter').value || 'all';
+      var url = '/api/channels?search=' + encodeURIComponent(search) + '&category=' + cat + '&page=' + chPage + '&limit=30';
+
+      api('GET', url, null, function(err, data) {
+        if (err || !data) return;
+
+        var tbody = document.getElementById('chTableBody');
+        var channels = data.channels || [];
+
+        if (channels.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Kanal bulunamadi</td></tr>';
+        } else {
+          var html = '';
+          for (var i = 0; i < channels.length; i++) {
+            var ch = channels[i];
+            var isChecked = selectedChIds.indexOf(ch.id) !== -1 ? 'checked' : '';
+            html += '<tr>' +
+              '<td><input type="checkbox" value="' + ch.id + '" ' + isChecked + ' onchange="toggleChSelect(this)"></td>' +
+              '<td><div class="channel-info">' +
+                '<div class="channel-logo-placeholder">' + esc(ch.name[0]) + '</div>' +
+                '<div><div style="font-weight:600">' + esc(ch.name) + '</div>' +
+                '<div class="truncate" style="font-size:11px;color:var(--text-muted)">' + esc(ch.url) + '</div></div>' +
+              '</div></td>' +
+              '<td><span class="badge badge-info">' + esc(ch.group) + '</span></td>' +
+              '<td><span class="badge ' + (ch.isActive ? 'badge-success' : 'badge-danger') + '">' + (ch.isActive ? 'Aktif' : 'Pasif') + '</span></td>' +
+              '<td><div class="btn-group">' +
+                '<button class="btn btn-secondary btn-sm" onclick="editChannel(\'' + ch.id + '\')">Duzenle</button>' +
+                '<button class="btn btn-' + (ch.isActive ? 'warning' : 'success') + ' btn-sm" onclick="toggleChannelStatus(\'' + ch.id + '\',' + !ch.isActive + ')">' + (ch.isActive ? 'Durdur' : 'Aktif Et') + '</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteChannel(\'' + ch.id + '\')">Sil</button>' +
+              '</div></td>' +
+            '</tr>';
           }
+          tbody.innerHTML = html;
         }
-        pagHtml += `<button ${currentPage >= data.totalPages ? 'disabled' : ''} onclick="currentPage++;loadChannels()">▶</button>`;
-        pagHtml += `<span style="font-size:12px;color:var(--text-muted);margin-left:8px">(${data.total} kanal)</span>`;
-        pagDiv.innerHTML = pagHtml;
-      } else {
-        pagDiv.innerHTML = data.total ? `<span style="font-size:12px;color:var(--text-muted)">${data.total} kanal</span>` : '';
-      }
+
+        // Pagination
+        var pagBox = document.getElementById('chPagination');
+        if (data.totalPages > 1) {
+          var pagHtml = '<button ' + (chPage <= 1 ? 'disabled' : '') + ' onclick="chPage--;loadChannels()">Onceki</button>';
+          for (var p = 1; p <= data.totalPages; p++) {
+            if (p === 1 || p === data.totalPages || Math.abs(p - chPage) <= 2) {
+              pagHtml += '<button class="' + (p === chPage ? 'active' : '') + '" onclick="chPage=' + p + ';loadChannels()">' + p + '</button>';
+            }
+          }
+          pagHtml += '<button ' + (chPage >= data.totalPages ? 'disabled' : '') + ' onclick="chPage++;loadChannels()">Sonraki</button>';
+          pagHtml += ' <span style="font-size:12px;color:var(--text-muted)">(' + data.total + ' kanal)</span>';
+          pagBox.innerHTML = pagHtml;
+        } else {
+          pagBox.innerHTML = data.total ? '<span style="font-size:12px;color:var(--text-muted)">' + data.total + ' kanal</span>' : '';
+        }
+      });
     }
 
-    let searchTimer;
-    function searchChannels() {
+    function debouncedSearch() {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { currentPage = 1; loadChannels(); }, 300);
+      searchTimer = setTimeout(function() { chPage = 1; loadChannels(); }, 300);
     }
 
-    function toggleSelectAll() {
-      const checked = document.getElementById('selectAllChannels').checked;
-      document.querySelectorAll('#channelsTable input[type="checkbox"]').forEach(cb => {
-        cb.checked = checked;
-        if (checked) selectedChannelIds.add(cb.value);
-        else selectedChannelIds.delete(cb.value);
+    function toggleAllCh() {
+      var checked = document.getElementById('chSelectAll').checked;
+      var boxes = document.querySelectorAll('#chTableBody input[type=checkbox]');
+      selectedChIds = [];
+      for (var i = 0; i < boxes.length; i++) {
+        boxes[i].checked = checked;
+        if (checked) selectedChIds.push(boxes[i].value);
+      }
+    }
+
+    function toggleChSelect(el) {
+      var idx = selectedChIds.indexOf(el.value);
+      if (el.checked && idx === -1) selectedChIds.push(el.value);
+      if (!el.checked && idx !== -1) selectedChIds.splice(idx, 1);
+    }
+
+    function bulkDeleteChannels() {
+      if (selectedChIds.length === 0) return toast('Kanal secin', 'warning');
+      if (!confirm(selectedChIds.length + ' kanal silinecek. Emin misiniz?')) return;
+
+      api('POST', '/api/channels/bulk-delete', { ids: selectedChIds }, function(err, data) {
+        if (data && data.success) {
+          toast('Kanallar silindi', 'success');
+          selectedChIds = [];
+          loadChannels();
+        }
       });
     }
 
-    function toggleChannelSelect(id) {
-      if (selectedChannelIds.has(id)) selectedChannelIds.delete(id);
-      else selectedChannelIds.add(id);
-    }
+    // ==================== ADD/EDIT CHANNEL ====================
+    function loadCategoryFilter() {
+      api('GET', '/api/categories', null, function(err, data) {
+        if (!data) return;
+        var cats = data.categories || [];
 
-    async function deleteSelectedChannels() {
-      if (selectedChannelIds.size === 0) return toast('Kanal seçin', 'warning');
-      if (!confirm(`${selectedChannelIds.size} kanal silinecek. Emin misiniz?`)) return;
-      
-      await api('/api/channels', {
-        method: 'DELETE',
-        body: JSON.stringify({ ids: Array.from(selectedChannelIds) })
+        // Filter dropdown
+        var filterHtml = '<option value="all">Tum Kategoriler</option>';
+        for (var i = 0; i < cats.length; i++) {
+          filterHtml += '<option value="' + esc(cats[i]) + '">' + esc(cats[i]) + '</option>';
+        }
+        document.getElementById('chCatFilter').innerHTML = filterHtml;
+
+        // Modal select
+        var selectHtml = '';
+        for (var j = 0; j < cats.length; j++) {
+          selectHtml += '<option value="' + esc(cats[j]) + '">' + esc(cats[j]) + '</option>';
+        }
+        document.getElementById('chGroupSelect').innerHTML = selectHtml;
       });
-      selectedChannelIds.clear();
-      toast('Kanallar silindi', 'success');
-      loadChannels();
     }
 
-    // ==================== CHANNEL MODAL ====================
-    function openAddChannelModal() {
-      document.getElementById('channelModalTitle').textContent = 'Kanal Ekle';
-      document.getElementById('editChannelId').value = '';
-      document.getElementById('chName').value = '';
-      document.getElementById('chUrl').value = '';
-      document.getElementById('chLogo').value = '';
-      document.getElementById('chEpgId').value = '';
-      loadCategorySelect();
-      openModal('channelModal');
+    function openAddChannel() {
+      document.getElementById('chModalTitle').textContent = 'Kanal Ekle';
+      document.getElementById('editChId').value = '';
+      document.getElementById('chNameInput').value = '';
+      document.getElementById('chUrlInput').value = '';
+      document.getElementById('chLogoInput').value = '';
+      document.getElementById('chEpgInput').value = '';
+      document.getElementById('chModal').classList.add('active');
     }
 
-    async function editChannel(id) {
-      const data = await api(`/api/channels?limit=9999`);
-      const ch = data.channels.find(c => c.id === id);
-      if (!ch) return toast('Kanal bulunamadı', 'error');
-      
-      document.getElementById('channelModalTitle').textContent = 'Kanal Düzenle';
-      document.getElementById('editChannelId').value = id;
-      document.getElementById('chName').value = ch.name;
-      document.getElementById('chUrl').value = ch.url;
-      document.getElementById('chLogo').value = ch.logo;
-      document.getElementById('chEpgId').value = ch.epgId;
-      await loadCategorySelect();
-      document.getElementById('chGroup').value = ch.group;
-      openModal('channelModal');
+    function editChannel(id) {
+      // Kanal bilgisini tablodan bul
+      api('GET', '/api/channels?limit=9999', null, function(err, data) {
+        if (!data) return;
+        var ch = null;
+        for (var i = 0; i < data.channels.length; i++) {
+          if (data.channels[i].id === id) { ch = data.channels[i]; break; }
+        }
+        if (!ch) return toast('Kanal bulunamadi', 'error');
+
+        document.getElementById('chModalTitle').textContent = 'Kanal Duzenle';
+        document.getElementById('editChId').value = id;
+        document.getElementById('chNameInput').value = ch.name;
+        document.getElementById('chUrlInput').value = ch.url;
+        document.getElementById('chLogoInput').value = ch.logo || '';
+        document.getElementById('chEpgInput').value = ch.epgId || '';
+        document.getElementById('chGroupSelect').value = ch.group || 'Genel';
+        document.getElementById('chModal').classList.add('active');
+      });
     }
 
-    async function saveChannel() {
-      const id = document.getElementById('editChannelId').value;
-      const body = {
-        name: document.getElementById('chName').value,
-        url: document.getElementById('chUrl').value,
-        logo: document.getElementById('chLogo').value,
-        group: document.getElementById('chGroup').value,
-        epgId: document.getElementById('chEpgId').value
+    function closeChModal() {
+      document.getElementById('chModal').classList.remove('active');
+    }
+
+    function saveChannel() {
+      var id = document.getElementById('editChId').value;
+      var body = {
+        name: document.getElementById('chNameInput').value.trim(),
+        url: document.getElementById('chUrlInput').value.trim(),
+        logo: document.getElementById('chLogoInput').value.trim(),
+        group: document.getElementById('chGroupSelect').value,
+        epgId: document.getElementById('chEpgInput').value.trim()
       };
-      
-      if (!body.name || !body.url) return toast('Ad ve URL zorunlu', 'error');
-      
-      const res = id
-        ? await api(`/api/channels/${id}`, { method: 'PUT', body: JSON.stringify(body) })
-        : await api('/api/channels', { method: 'POST', body: JSON.stringify(body) });
-      
-      if (res.success) {
-        toast(id ? 'Kanal güncellendi' : 'Kanal eklendi', 'success');
-        closeModal('channelModal');
-        loadChannels();
-      } else {
-        toast(res.error, 'error');
-      }
-    }
 
-    async function toggleChannel(id, isActive) {
-      await api(`/api/channels/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ isActive })
+      if (!body.name || !body.url) return toast('Ad ve URL zorunlu', 'warning');
+
+      var method = id ? 'PUT' : 'POST';
+      var url = id ? '/api/channels/' + id : '/api/channels';
+
+      api(method, url, body, function(err, data) {
+        if (data && data.success) {
+          toast(id ? 'Kanal guncellendi' : 'Kanal eklendi', 'success');
+          closeChModal();
+          loadChannels();
+          loadCategoryFilter();
+        } else {
+          toast((data && data.error) || 'Hata olustu', 'error');
+        }
       });
-      toast(`Kanal ${isActive ? 'aktif' : 'pasif'} edildi`, 'info');
-      loadChannels();
     }
 
-    async function deleteChannel(id) {
+    function toggleChannelStatus(id, newStatus) {
+      api('PUT', '/api/channels/' + id, { isActive: newStatus }, function(err, data) {
+        if (data && data.success) {
+          toast('Kanal durumu guncellendi', 'info');
+          loadChannels();
+        }
+      });
+    }
+
+    function deleteChannel(id) {
       if (!confirm('Bu kanal silinecek. Emin misiniz?')) return;
-      await api(`/api/channels/${id}`, { method: 'DELETE' });
-      toast('Kanal silindi', 'success');
-      loadChannels();
+      api('DELETE', '/api/channels/' + id, null, function(err, data) {
+        if (data && data.success) {
+          toast('Kanal silindi', 'success');
+          loadChannels();
+        }
+      });
     }
 
-    // ==================== CATEGORIES ====================
-    async function loadCategories() {
-      const data = await api('/api/categories');
-      const select = document.getElementById('channelCategoryFilter');
-      if (select) {
-        select.innerHTML = '<option value="all">Tüm Kategoriler</option>' +
-          data.categories.map(c => `<option value="${c}">${c}</option>`).join('');
-      }
-    }
-
-    async function loadCategorySelect() {
-      const data = await api('/api/categories');
-      const select = document.getElementById('chGroup');
-      select.innerHTML = data.categories.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-
-    async function loadCategoriesList() {
-      const data = await api('/api/categories');
-      const el = document.getElementById('categoriesList');
-      el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">' +
-        data.categories.map(c => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg-dark);border-radius:8px;">
-            <span>📂 ${escHtml(c)}</span>
-            <button class="btn btn-danger btn-sm" onclick="deleteCategory('${escHtml(c)}')">✕</button>
-          </div>
-        `).join('') + '</div>';
-    }
-
-    async function addCategory() {
-      const name = document.getElementById('newCategory').value.trim();
-      if (!name) return toast('Kategori adı girin', 'warning');
-      const res = await api('/api/categories', { method: 'POST', body: JSON.stringify({ name }) });
-      if (res.success) {
-        toast('Kategori eklendi', 'success');
-        document.getElementById('newCategory').value = '';
-        loadCategoriesList();
-        loadCategories();
-      } else {
-        toast(res.error, 'error');
-      }
-    }
-
-    async function deleteCategory(name) {
-      if (!confirm(`"${name}" kategorisi silinecek?`)) return;
-      await api(`/api/categories/${encodeURIComponent(name)}`, { method: 'DELETE' });
-      toast('Kategori silindi', 'success');
-      loadCategoriesList();
-      loadCategories();
+    function exportChannels() {
+      window.open('/api/channels/export/m3u?token=' + TOKEN, '_blank');
     }
 
     // ==================== M3U IMPORT ====================
-    function handleFileSelect(input) {
+    var selectedImportFile = null;
+
+    function onFileSelected() {
+      var input = document.getElementById('m3uFile');
       if (input.files.length > 0) {
-        selectedFile = input.files[0];
-        document.getElementById('fileInfo').classList.remove('hidden');
-        document.getElementById('fileName').textContent = `📄 ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
-        document.getElementById('importBtn').disabled = false;
+        selectedImportFile = input.files[0];
+        document.getElementById('fileNameBox').style.display = 'block';
+        document.getElementById('fileNameBox').textContent = selectedImportFile.name + ' (' + (selectedImportFile.size / 1024 / 1024).toFixed(2) + ' MB)';
+        document.getElementById('importFileBtn').disabled = false;
       }
     }
 
-    // Drag and drop
-    const dropZone = document.getElementById('dropZone');
-    if (dropZone) {
-      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
-      dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border)'; });
-      dropZone.addEventListener('drop', e => {
+    // Drag & Drop
+    (function() {
+      var da = document.getElementById('dropArea');
+      if (!da) return;
+      da.addEventListener('dragover', function(e) { e.preventDefault(); da.style.borderColor = 'var(--primary)'; });
+      da.addEventListener('dragleave', function() { da.style.borderColor = 'var(--border)'; });
+      da.addEventListener('drop', function(e) {
         e.preventDefault();
-        dropZone.style.borderColor = 'var(--border)';
+        da.style.borderColor = 'var(--border)';
         if (e.dataTransfer.files.length > 0) {
-          document.getElementById('m3uFileInput').files = e.dataTransfer.files;
-          handleFileSelect(document.getElementById('m3uFileInput'));
+          var fakeInput = document.getElementById('m3uFile');
+          fakeInput.files = e.dataTransfer.files;
+          onFileSelected();
+        }
+      });
+    })();
+
+    function doImportFile() {
+      if (!selectedImportFile) return toast('Dosya secin', 'warning');
+
+      var btn = document.getElementById('importFileBtn');
+      btn.disabled = true;
+      btn.textContent = 'Import ediliyor...';
+
+      var formData = new FormData();
+      formData.append('m3uFile', selectedImportFile);
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/channels/import', true);
+      if (TOKEN) xhr.setRequestHeader('Authorization', 'Bearer ' + TOKEN);
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          btn.disabled = false;
+          btn.textContent = 'Import Et';
+
+          var resultDiv = document.getElementById('importResult');
+          resultDiv.style.display = 'block';
+
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.success) {
+              resultDiv.style.background = 'rgba(34,197,94,0.1)';
+              resultDiv.style.border = '1px solid #22c55e';
+              resultDiv.innerHTML = '<span style="color:#22c55e;font-weight:600">' + data.message + '</span>';
+              toast(data.message, 'success');
+              loadCategoryFilter();
+            } else {
+              resultDiv.style.background = 'rgba(239,68,68,0.1)';
+              resultDiv.style.border = '1px solid #ef4444';
+              resultDiv.innerHTML = '<span style="color:#ef4444">' + (data.error || 'Hata') + '</span>';
+            }
+          } catch (e) {
+            resultDiv.style.background = 'rgba(239,68,68,0.1)';
+            resultDiv.innerHTML = '<span style="color:#ef4444">Sunucu hatasi</span>';
+          }
+        }
+      };
+
+      xhr.send(formData);
+    }
+
+    function doImportText() {
+      var content = document.getElementById('m3uTextarea').value.trim();
+      if (!content) return toast('M3U icerigi girin', 'warning');
+
+      api('POST', '/api/channels/import', { m3uContent: content }, function(err, data) {
+        if (data && data.success) {
+          toast(data.message, 'success');
+          document.getElementById('m3uTextarea').value = '';
+          loadCategoryFilter();
+        } else {
+          toast((data && data.error) || 'Hata', 'error');
         }
       });
     }
 
-    async function importM3U() {
-      if (!selectedFile) return toast('Dosya seçin', 'warning');
-      
-      const btn = document.getElementById('importBtn');
-      btn.disabled = true;
-      btn.textContent = '⏳ Import ediliyor...';
-      
-      const formData = new FormData();
-      formData.append('m3uFile', selectedFile);
-      
-      try {
-        const res = await fetch('/api/channels/import', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        
-        const resultDiv = document.getElementById('importResult');
-        resultDiv.classList.remove('hidden');
-        
-        if (data.success) {
-          resultDiv.style.background = 'rgba(34,197,94,0.1)';
-          resultDiv.style.border = '1px solid var(--success)';
-          resultDiv.innerHTML = `<p style="color:var(--success);font-weight:600">✅ ${data.message}</p>
-            <p style="color:var(--text-secondary);font-size:13px;margin-top:4px">Toplam: ${data.total} kanal</p>`;
-          toast(data.message, 'success');
-          loadCategories();
-        } else {
-          resultDiv.style.background = 'rgba(239,68,68,0.1)';
-          resultDiv.style.border = '1px solid var(--danger)';
-          resultDiv.innerHTML = `<p style="color:var(--danger)">❌ ${data.error}</p>`;
-          toast(data.error, 'error');
+    // ==================== CATEGORIES ====================
+    function loadCategoryList() {
+      api('GET', '/api/categories', null, function(err, data) {
+        if (!data) return;
+        var cats = data.categories || [];
+        var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">';
+        for (var i = 0; i < cats.length; i++) {
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg-dark);border-radius:8px;">' +
+            '<span>📂 ' + esc(cats[i]) + '</span>' +
+            '<button class="btn btn-danger btn-sm" onclick="deleteCategory(\'' + esc(cats[i]) + '\')">Sil</button>' +
+          '</div>';
         }
-      } catch (err) {
-        toast('Import hatası: ' + err.message, 'error');
-      }
-      
-      btn.disabled = false;
-      btn.textContent = '📥 Import Et';
+        html += '</div>';
+        document.getElementById('catListBox').innerHTML = html;
+      });
     }
 
-    async function importM3UContent() {
-      const content = document.getElementById('m3uContent').value.trim();
-      if (!content) return toast('M3U içeriği girin', 'warning');
-      
-      try {
-        const res = await api('/api/channels/import', {
-          method: 'POST',
-          body: JSON.stringify({ m3uContent: content })
-        });
-        
-        if (res.success) {
-          toast(res.message, 'success');
-          document.getElementById('m3uContent').value = '';
-          loadCategories();
+    function addCategory() {
+      var name = document.getElementById('newCatInput').value.trim();
+      if (!name) return toast('Kategori adi girin', 'warning');
+
+      api('POST', '/api/categories', { name: name }, function(err, data) {
+        if (data && data.success) {
+          toast('Kategori eklendi', 'success');
+          document.getElementById('newCatInput').value = '';
+          loadCategoryList();
+          loadCategoryFilter();
         } else {
-          toast(res.error, 'error');
+          toast((data && data.error) || 'Hata', 'error');
         }
-      } catch (err) {
-        toast('Hata: ' + err.message, 'error');
-      }
+      });
+    }
+
+    function deleteCategory(name) {
+      if (!confirm('"' + name + '" silinecek?')) return;
+      api('DELETE', '/api/categories/' + encodeURIComponent(name), null, function(err, data) {
+        if (data && data.success) {
+          toast('Kategori silindi', 'success');
+          loadCategoryList();
+          loadCategoryFilter();
+        }
+      });
     }
 
     // ==================== USERS ====================
-    async function loadUsers() {
-      const data = await api('/api/users');
-      const tbody = document.getElementById('usersTable');
-      tbody.innerHTML = data.users.map(u => `
-        <tr>
-          <td><strong>${escHtml(u.username)}</strong></td>
-          <td>${escHtml(u.email)}</td>
-          <td><span class="badge ${u.role === 'admin' ? 'badge-warning' : 'badge-info'}">${u.role}</span></td>
-          <td><span class="badge ${u.isActive ? 'badge-success' : 'badge-danger'}">${u.isActive ? 'Aktif' : 'Pasif'}</span></td>
-          <td>${u.playlistCount}</td>
-          <td style="font-size:12px">${new Date(u.createdAt).toLocaleDateString('tr')}</td>
-          <td>
-            <div class="btn-group">
-              ${u.role !== 'admin' ? `
-                <button class="btn btn-${u.isActive ? 'warning' : 'success'} btn-sm" onclick="toggleUser('${u.id}', ${!u.isActive})">${u.isActive ? '⏸️' : '▶️'}</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️</button>
-              ` : '<span class="badge badge-warning">Admin</span>'}
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    async function toggleUser(id, isActive) {
-      await api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify({ isActive }) });
-      toast(`Kullanıcı ${isActive ? 'aktif' : 'pasif'} edildi`, 'info');
-      loadUsers();
-    }
-
-    async function deleteUser(id) {
-      if (!confirm('Bu kullanıcı ve tüm playlist\'leri silinecek!')) return;
-      await api(`/api/users/${id}`, { method: 'DELETE' });
-      toast('Kullanıcı silindi', 'success');
-      loadUsers();
-    }
-
-    // ==================== ALL PLAYLISTS ====================
-    async function loadAllPlaylists() {
-      const data = await api('/api/playlists');
-      const tbody = document.getElementById('allPlaylistsTable');
-      if (data.playlists.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:40px;color:var(--text-muted)">Henüz playlist yok</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.playlists.map(p => `
-        <tr>
-          <td><strong>${escHtml(p.name)}</strong></td>
-          <td>${escHtml(p.username)}</td>
-          <td><span class="badge badge-primary">${p.channelCount}</span></td>
-          <td>${p.accessCount || 0}x</td>
-          <td style="font-size:12px">${new Date(p.createdAt).toLocaleDateString('tr')}</td>
-          <td>
-            <div class="m3u-link-box">
-              <input type="text" value="${p.m3uUrl}" readonly onclick="this.select()">
-              <button class="btn btn-sm btn-primary" onclick="copyLink('${p.m3uUrl}')">📋</button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    // ==================== HELPERS ====================
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-    
-    function escHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
-
-    function copyLink(url) {
-      navigator.clipboard.writeText(url).then(() => toast('Link kopyalandı!', 'success'));
-    }
-
-    async function logout() {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      document.cookie = 'token=; Max-Age=0';
-      window.location.href = '/';
-    }
-
-    // Close modal on overlay click
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('active');
+    function loadUsers() {
+      api('GET', '/api/users', null, function(err, data) {
+        if (!data) return;
+        var users = data.users || [];
+        var html = '';
+        for (var i = 0; i < users.length; i++) {
+          var u = users[i];
+          html += '<tr>' +
+            '<td><strong>' + esc(u.username) + '</strong></td>' +
+            '<td>' + esc(u.email) + '</td>' +
+            '<td><span class="badge ' + (u.role === 'admin' ? 'badge-warning' : 'badge-info') + '">' + u.role + '</span></td>' +
+            '<td><span class="badge ' + (u.isActive ? 'badge-success' : 'badge-danger') + '">' + (u.isActive ? 'Aktif' : 'Pasif') + '</span></td>' +
+            '<td>' + (u.playlistCount || 0) + '</td>' +
+            '<td style="font-size:12px">' + new Date(u.createdAt).toLocaleDateString('tr') + '</td>' +
+            '<td>';
+          if (u.role !== 'admin') {
+            html += '<div class="btn-group">' +
+              '<button class="btn btn-' + (u.isActive ? 'warning' : 'success') + ' btn-sm" onclick="toggleUserStatus(\'' + u.id + '\',' + !u.isActive + ')">' + (u.isActive ? 'Durdur' : 'Aktif Et') + '</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="deleteUser(\'' + u.id + '\')">Sil</button>' +
+            '</div>';
+          } else {
+            html += '<span class="badge badge-warning">Admin</span>';
+          }
+          html += '</td></tr>';
+        }
+        document.getElementById('usersTableBody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">Kullanici yok</td></tr>';
       });
-    });
+    }
 
-    // ESC key closes modal
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    function toggleUserStatus(id, active) {
+      api('PUT', '/api/users/' + id, { isActive: active }, function(err, data) {
+        if (data && data.success) { toast('Guncellendi', 'success'); loadUsers(); }
+      });
+    }
+
+    function deleteUser(id) {
+      if (!confirm('Kullanici ve playlistleri silinecek!')) return;
+      api('DELETE', '/api/users/' + id, null, function(err, data) {
+        if (data && data.success) { toast('Silindi', 'success'); loadUsers(); }
+      });
+    }
+
+    // ==================== PLAYLISTS ====================
+    function loadPlaylists() {
+      api('GET', '/api/playlists', null, function(err, data) {
+        if (!data) return;
+        var pls = data.playlists || [];
+        var html = '';
+        for (var i = 0; i < pls.length; i++) {
+          var p = pls[i];
+          html += '<tr>' +
+            '<td><strong>' + esc(p.name) + '</strong></td>' +
+            '<td>' + esc(p.username) + '</td>' +
+            '<td><span class="badge badge-primary">' + (p.channelCount || 0) + '</span></td>' +
+            '<td>' + (p.accessCount || 0) + 'x</td>' +
+            '<td><div class="m3u-link-box">' +
+              '<input type="text" value="' + esc(p.m3uUrl) + '" readonly onclick="this.select()">' +
+              '<button class="btn btn-sm btn-primary" onclick="copyText(\'' + esc(p.m3uUrl) + '\')">Kopyala</button>' +
+            '</div></td>' +
+          '</tr>';
+        }
+        document.getElementById('playlistsTableBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Playlist yok</td></tr>';
+      });
+    }
+
+    // ==================== LOGOUT ====================
+    function doLogout() {
+      document.cookie = 'token=; path=/; max-age=0';
+      api('POST', '/api/auth/logout', null, function() {
+        window.location.href = '/';
+      });
+    }
+
+    // ==================== MODAL EVENTS ====================
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
       }
     });
 
-    // Init
-    init();
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var modals = document.querySelectorAll('.modal-overlay.active');
+        for (var i = 0; i < modals.length; i++) modals[i].classList.remove('active');
+      }
+    });
+
+    // ==================== INIT ====================
+    initApp();
   </script>
 </body>
 </html>
